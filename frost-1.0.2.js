@@ -1,6 +1,6 @@
 /**
  * 霜降-->>>
- * 初始版本 v: 1.0.1
+ * 初始版本 v: 1.0.2
  * 模块开发 表单完善,ajax 完善
  */
 (function (wind, document) {
@@ -87,11 +87,11 @@
                                     var sgNew = new Ssangyong(snowflake.key);
                                     Object.defineProperty(sgdata, snowflake.key, sgNew);
                                     sgNew.$appendSnowflaks(snowflake);
-                                }else{
-                                    console.warn("找不到 [" + snowflake.name + "] ");
+                                } else {
+                                    console.warn("找不到 [" + snowflake.name + "] ", snowflake.target);
                                 }
-                            }else{
-                                console.warn("找不到 [" + snowflake.name + "] ");
+                            } else {
+                                //   console.warn("找不到 [" + snowflake.name + "] ", snowflake.target);
                             }
                         }
                     }
@@ -103,7 +103,7 @@
     /**
      * 模板渲染
      */
-    function Template() {}
+    function Template() { }
     Template.prototype = {
         /**
          * 初始化模板信息
@@ -194,7 +194,7 @@
     /**
      * 属性中心
      */
-    function ElemAttributes() {}
+    function ElemAttributes() { }
     ElemAttributes.prototype = {
         add: function (key, value) {
             if (!key || !value) {
@@ -259,10 +259,10 @@
         get: function () {
             return true;
         },
-        set: function () {}
+        set: NullFunc,
     }
 
-    function GetSetChildren() {}
+    function GetSetChildren() { }
     GetSetChildren.prototype = {
         $appendGetSetChildren: function (key, getset) {
             return this[key] = getset;
@@ -343,12 +343,18 @@
             }
         }
         if (getsets) {
-            Object.defineProperty(value, "__getset__", {
-                value: getsets,
-                writable: true
-            });
+            
+            Object.defineProperty(value, "__getset__", new $__getset__(getsets));
         }
     }
+
+    function $__getset__(value){
+        this.get=function(){
+            return value;
+        }
+        this.set=NullFunc;
+    }
+
     /**
      * 移除对象
      * @param {*} ssyong 
@@ -491,7 +497,7 @@
             }
             value = newValue;
             _this.view(newValue, before);
-            $frost.$recursive.setRecursiveNext(true);
+            $frost.$recursive.recursiveNext = true;
         }.bind(this);
     }
     GetSet.prototype = {
@@ -589,37 +595,46 @@
      */
     function RecursiveElem($frost, params, ssangyongs) {
         //-> 是否停止
-        var recursiveNext = true;
-        //-> 停止循环
-        this.next = function () {
-            recursiveNext = false;
-        }
-        this.setRecursiveNext = function (recursive) {
-            return recursiveNext = recursive;
-        }
+        this.recursiveNext = true;
         this.recursive = function (node) {
             //-> 处理属性
             rain.attributeProcessing($frost, node.attributes, node, params, ssangyongs);
             //-> 子元素处理
-            for (var i = 0, t;
-                (t = node.children[i]) && recursiveNext; i++) {
-                this.recursive(t);
+            if (this.recursiveNext) {
+                var len = node.children.length;
+                for (var i = 0, t; t = node.children[i];) {
+                    this.recursive(t);
+                    if (len == node.children.length) {
+                        i++;
+                    } else {
+                        len = node.children.length;
+                    }
+                }
             }
-            recursiveNext = true;
+            this.recursiveNext = true;
         }
         this.recursiveParamElem = function (params, ssangyongs, node) {
-            recursiveNext = true;
             //-> 处理属性
             rain.attributeProcessing($frost, node.attributes, node, params, ssangyongs);
             //-> 子元素处理
-            for (var i = 0, t;
-                (t = node.children[i]) && recursiveNext; i++) {
-                this.recursiveParamElem(params, ssangyongs, t);
+            if (this.recursiveNext) {
+                var len = node.children.length;
+                for (var i = 0, t; t = node.children[i];) {
+                    this.recursiveParamElem(params, ssangyongs, t);
+                    if (len == node.children.length) {
+                        i++;
+                    } else {
+                        len = node.children.length;
+                    }
+                }
             }
+            this.recursiveNext = true;
         }
     }
 
-
+    function addDefineProperty(obj, name, param){
+        return Object.defineProperty(obj, name, param);
+    }
     /**
      * 霜降
      */
@@ -631,35 +646,23 @@
         if (is.ava(elem)) {
             throw "目标对象不可用[" + elem + "]";
         }
-
-        //-> 设置运行时环境
-        (function ($frost) {
-            //-> 给定值改变事件
-            Object.defineProperty($frost, "$changeValue", {
-                value: new ChangeValue(param.change)
-            });
-            //-> 是否有冒泡事件处理
-            if (param.entrust) {
-                //-> 事件绑定
-                Object.defineProperty($frost, "$entrust", {
-                    value: new Entrust(elem, param.entrust)
-                });
-            }
-            //-> 双龙
-            Object.defineProperty($frost, "$ssangyong", new Ssangyong("data"));
-            //-> 参数处理
-            Twining(param.data, "data", $frost.$ssangyong, "data", param, false, $frost);
-            //-> 递归处理
-            Object.defineProperty($frost, "$recursive", {
-                value: new RecursiveElem($frost, [param.data], [$frost.$ssangyong])
-            });
-            //->设置 name 
-            Object.defineProperty($frost, "$name", {
-                value: param.name
-            });
-            //-> 开始处理 渲染对象
-            $frost.$recursive.recursive(elem);
-        })(this);
+        //-> 给定值改变事件
+        addDefineProperty(this, "$changeValue", { value: new ChangeValue(param.change) });
+        //-> 是否有冒泡事件处理
+        if (param.entrust) {
+            //-> 事件绑定
+            addDefineProperty(this, "$entrust", { value: new Entrust(elem, param.entrust) });
+        }
+        //-> 双龙
+        addDefineProperty(this, "$ssangyong", { value: new Ssangyong("data") });
+        //-> 参数处理
+        Twining(param.data, "data", this.$ssangyong, "data", param, false, this);
+        addDefineProperty(this, "$recursive", { value: new RecursiveElem(this, [param.data], [this.$ssangyong]) });
+        //->设置 name 
+        addDefineProperty(this, "$name", { value: param.name });
+        //-> 开始处理 渲染对象
+        this.$recursive.recursive(elem);
+        this.__proto__ = param.data;
     }
 
     /**
@@ -897,12 +900,6 @@
             }
         });
         /**
-         * 清空数据数据
-         */
-        var empty = function () {
-            arr.splice(0, arr.length);
-        }
-        /**
          * 移除所有,会吧所有的数据清空  是从内存中清空
          */
         Object.defineProperty(this, "remove", {
@@ -922,13 +919,6 @@
                 //   ssangyong.length.updateView(arr.length, undefined);
             }
         });
-
-
-        //-> 给定新的数组数据,单指的是同类型数据,不同的直接复制
-        var newly = function (newlyArr) {
-            empty();
-            arr.push.apply(arr, newlyArr);
-        }
         /**
          * 剪接 
          */
@@ -1740,15 +1730,15 @@
         /**
          * 当 ajax 终止请求时触发  这个不是手动终止 ajax
          */
-        this.abort = function abort() {}
+        this.abort = function abort() { }
         /**
          * 当请求出错时
          */
-        this.error = function () {}
+        this.error = function () { }
         /**
          * 当请求 加载时
          */
-        this.load = function () {}
+        this.load = function () { }
         /**
          * 当 ajax 请求完成时  不管失败  还是成功 还是 取消
          */
@@ -1779,15 +1769,15 @@
         /**
          * 当 ajax 请求开始加载数据时，将触发该事件。
          */
-        this.loadstart = function () {}
+        this.loadstart = function () { }
         /**
          * ajax 进度事件
          */
-        this.progress = function () {}
+        this.progress = function () { }
         /**
          * ajax 请求超时事件 
          */
-        this.timeout = function () {}
+        this.timeout = function () { }
         //-> 是否为 get 请求
         var isGet = "GET" === param.method.toLocaleUpperCase();
         //-> 初始化参数
@@ -2391,7 +2381,6 @@
     var rain = new Rain();
     var temp = new Template();
     var attrKV = new ElemAttributes();
-    Frost.addAttr = rain.add;
     Frost.rain = rain;
     Frost.temp = temp;
     Frost.attr = attrKV;
@@ -2695,9 +2684,19 @@
     rain.add("f-value", {
         changeValue: function (e) {
             var event = getEvent(e);
-            var value = event.target.value;
-            var dad = data.getValuePosition(this.name,this.params);
-            dad[this.key] = value;
+            var value = getInputValue(event.target.value);
+            var key, dad;
+            if (this.model) {
+                //-> 判断给定的模型对象是否可用
+                dad = data.getValuePosition(this.model, this.params);
+            }
+            if (is.ava(dad)) {
+                key = this.key;
+                dad = data.getValuePosition(this.name, this.params);
+            } else {
+                key = data.lastKey(this.model);
+            }
+            dad[key] = value;
         },
         //-> 设置属性信息
         initAttr: function (snowflak) {
@@ -2707,7 +2706,7 @@
                 snowflak.target.setAttribute("name", value.name);
             }
             //-> 双向绑定
-            if (val.Bool(value.model)) {
+            if (value.model) {
                 snowflak.target.addEventListener("input", this.changeValue.bind(snowflak), false);
                 snowflak.target.addEventListener("change", this.changeValue.bind(snowflak), false);
             }
@@ -2808,7 +2807,7 @@
             //-> 循环处理 
             for (var i = 0, t, tv; t = snowflak.caseChildren[i]; i++) {
                 tv = t.value;
-                if (tv[0] == "{" && tv[tv.length - 1] == "}") {
+                if (tv[0] == "$" && tv[tv.length - 1] == "}") {
                     //-> 目标值
                     var vs = data.getValue(tv.substring(1, tv.length - 1), snowflak.params);
                     //->  展示 处理
@@ -2843,12 +2842,11 @@
 
     rain.add("f-show", {
         execute: function (snowflak, value) {
-            var isShow = value;
-            if (snowflak.value && snowflak.value.eval) {
-                isShow = evel(snowflak.value.eval);
-                if (is.func(isShow)) {
-                    isShow = isShow(value, snowflak, snowflak.params);
-                }
+            var isShow;
+            if (snowflak.value.eval) {
+                isShow = Function("value", "return " + snowflak.value.eval)(value);
+            } else {
+                isShow == !!value;
             }
             if (isShow) {
                 //-> 显示
@@ -2938,7 +2936,7 @@
             //-> 执行时跳过所有
             var fr = snowflak.$frost;
             if (fr.$name !== name) {
-                fr.$recursive.next();
+                fr.$recursive.recursiveNext = false;
             }
         }
     });
@@ -3087,11 +3085,16 @@
                     }
                 }
             }
+            //-> recursiveParamElem
+            var recu = snowflak.$frost.$recursive;
+            if (is.ava(around)) {
+                recu.recursiveNext = false;
+                return;
+            }
             var childrens = snowflak.childrens = [];
             var target;
             var current;
-            //-> recursiveParamElem
-            var recu = snowflak.$frost.$recursive;
+
             //-> 数字?
             if (typeof (around) == "number" || around instanceof Number) {
                 //-> 自己就是个替代品
@@ -3118,7 +3121,7 @@
             //-> 添加上去
             this.addHtml(snowflak, this.filter(snowflak, childrens));
             //-> 跳过当前这个
-            recu.next();
+            recu.recursiveNext = false;
         }
     });
 
@@ -3149,12 +3152,28 @@
     rain.add("f-elem", {
         binding: false,
         execute: function (snowflak) {
-            var elemTemp = temp.get(snowflak.name);
+            var elemTemp;
+            if (snowflak.name.indexOf("${") == 0) {
+                var name = data.getValue(snowflak.name.substring(2, snowflak.name.length - 1), snowflak.params);
+                if (is.ava(name)) {
+                    console.warn("地址" + snowflak.name + "无值");
+                    return;
+                }
+                elemTemp = temp.get(name);
+            } else {
+                elemTemp = temp.get(snowflak.name);
+            }
             snowflak.target.appendChild(elemTemp);
         }
     });
+    rain.add("f-skip", {
+        binding: false,
+        execute: function (snowflak) {
+            snowflak.$frost.$recursive.recursiveNext = false;
+        }
+    })
 
-    function NullFunc() {}
+    function NullFunc() { }
 
 
 })(window, window.document);
