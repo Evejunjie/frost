@@ -1,0 +1,14 @@
+nav{
+    max-height: 80vh;
+    
+}
+.navigation-name{
+    height: 28px;
+}
+.navigation-anchor-div{
+    height: calc( 100% - 28px);
+    overflow: auto;
+    
+    
+    
+}
