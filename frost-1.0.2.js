@@ -961,7 +961,9 @@
         });
     }
     SnowCoverArray.prototype = Array.prototype;
-
+    window.SnowCoverArray= SnowCoverArray;
+    window.Ssangyong = Ssangyong;
+    window.Twining = Twining;
 
 
     /**
