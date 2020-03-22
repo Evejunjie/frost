@@ -95,9 +95,11 @@ header *{
     padding: 10px;
     border-radius: 15px;
     position: relative;
+    background-color: currentColor;
+    margin-top: 20px;
 }
 .code-javascript::after{
-    content: "javascript";
+    content: "JavaScript";
     padding: 2px 4px;
     float: right;
     background-color: snow;
@@ -128,4 +130,48 @@ header *{
 }
 .code-value{
     white-space: pre;
+}
+
+.code-html{
+    background-color: currentColor;
+    padding: 10px;
+    border-radius: 15px;
+    position: relative;
+    margin-top: 20px;
+}
+.code-html::after{
+    content: "Html";
+    padding: 2px 4px;
+    float: right;
+    background-color: snow;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    position: absolute;
+    top: -15px;
+    right: 25px;
+}
+.code-html-string{
+    color: dodgerblue;
+}
+.code-html-note{
+    color: forestgreen;
+}
+.code-html-note-text{
+    color: ghostwhite;
+}
+.code-html-node-symbol{
+    color: lawngreen;
+}
+.code-html-node-name{
+    color: magenta;
+}
+
+.code-html-node-attr-name{
+    color: orange;
+}
+.code-html-node-attr-value{
+    color: orangered;
+}
+.code-html-attr-eq{
+    color: skyblue;
 }

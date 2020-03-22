@@ -88,7 +88,7 @@
                                     Object.defineProperty(sgdata, snowflake.key, sgNew);
                                     sgNew.$appendSnowflaks(snowflake);
                                 } else {
-                                    console.warn("找不到 [" + snowflake.name + "] ", snowflake.target);
+                                    console.warn("找不到 [" + snowflake.name + "] ",snowflake);
                                 }
                             } else {
                                 //   console.warn("找不到 [" + snowflake.name + "] ", snowflake.target);

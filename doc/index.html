@@ -15,6 +15,13 @@
 </head>
 
 <body>
+    <template f-temp="temp-html">
+        <div>
+            <!-- 注释 -->
+            <span>你要注意</span>
+            <p id="test-all-one" class="attr" style="color: red;"> 我们 </p>
+        </div>
+    </template>
     <template f-temp="util">
         <div>
 
@@ -408,7 +415,8 @@
                         </p>
                         <p> 如果您对 自定义扩展没有兴趣或者想了解 <a href="#attr">Frost 元素属性介绍,那么请点击这里</a> </p>
                     </figure>
-                    <div f-javascript="{key:javascriptCode.text}" class="code-javascript"></div>
+                    <div f-code-javascript="{key:javascriptCode.js}" class="code-javascript"></div>
+                    <div f-code-html="{key:javascriptCode.html}" class="code-html"></div>
                     <div>
                         <div>
                             <figure f-for="{key:frostFieldInfo,elem:detailed}">
@@ -487,7 +495,8 @@
         <span class="code-value code-keyword" f-text="value"></span>
     </template>
     <template f-temp="LineComment" note="注释">
-        <span class="code-linecomment">// <span class="code-value code-linecomment" f-text="value"></span></span>
+        <span class="code-linecomment"><span f-text="empty" class="code-value code-linecomment"></span>//<span
+                class="code-value code-linecomment" f-text="value"></span></span>
     </template>
     <template f-temp="String" note="字符串">
         <span f-text="value" class="code-value code-string"></span>
@@ -500,25 +509,107 @@
     </template>
 
     <!--  页面代码   -->
-    <template f-temp="html-text">
-        <span f-text="value"></span>
-    </template>
+    <template f-temp="html-text"><span f-text="value" class="code-html-string code-value"></span></template>
     <template f-temp="html-note">
-        <span>&gt;--</span>
-        <span f-text="value"></span>
+        <span class="code-html-note">&lt;!--</span>
+        <span f-text="value" class="code-html-note-text"></span>
+        <span class="code-html-note">--&gt;</span>
     </template>
     <template f-temp="html-elem">
-        <span> <span>&gt;</span><span f-text="value"></span><span>/&gl;</span> <span>
-                <!-- 作判断处理 是否未 html -->
-            </span> <span>&gt;</span><span f-text="value"></span><span>/&gl;</span> </span>
+        <span><span class="code-html-node-symbol">&lt;</span><span f-text="value"
+                class="code-html-node-name"></span><span note="属性"><span f-for="attr"> <span f-text="key"
+                        class="code-html-node-attr-name"></span><span><span class="code-html-attr-eq">=</span>"</span><span class="code-html-node-attr-value"
+                        f-text="value"></span><span>"&nbsp;</span></span></span><span
+                class="code-html-node-symbol">&gt;</span><span note="孩子" f-for="children"><span
+                    f-elem="${elem}"></span></span><span class="code-html-node-symbol">&lt;</span><span
+                class="code-html-node-name" f-text="value"></span><span
+                class="code-html-node-symbol">/&gt;</span></span>
     </template>
-
     <script>
-        Frost.rain.add("f-javascript", {
+        function HtmlC(htm) {
+            this.children = [];
+            if (htm instanceof Text) {
+                this.elem = "html-text";
+                this.value = htm.data;
+            } else if (htm instanceof Comment) {
+                this.elem = "html-note";
+                this.value = htm.data;
+            } else if (htm instanceof HTMLElement) {
+                //-> 属性
+                this.elem = "html-elem";
+                this.value = htm.tagName.toLocaleLowerCase();
+                this.attr = [];
+                var arr = htm.attributes;
+                for (var i = 0, t; t = arr[i]; i++) {
+                    //-> 也可以 直接 存入 t 但不推荐
+                    this.attr.push({ key: t.name, value: t.value });
+                }
+                //-> 循环 遍历
+                var ch = htm.childNodes;
+                for (var i = 0, t; t = ch[i]; i++) {
+                    this.children.push(new HtmlC(t));
+                }
+            }
+        }
+
+        Frost.rain.add("f-code-html", {
+            binding: false,
+            initTarget: function (snowflake, elem) {
+                var code = document.createElement("code");
+                code.innerHTML = '<span f-for="{key:code-html}"><span f-elem="${elem}"></span></span>';
+                elem.appendChild(code);
+                snowflake.target = code;
+            },
+            execute: function (snowflake, value) {
+                if (futil.is.ava(value)) {
+                    snowflake.code.splice(0, snowflake.code.length);
+                    return;
+                }
+                //-> 对数据进行处理
+                var html, thv;
+                if (value instanceof HTMLElement) {
+                    html = [value];
+                } else if (typeof (value) == "string") {
+                    //-> 是否能从模板中取道数据
+                    if (value.length < 46) {
+                        thv = Frost.temp["Temp-" + value];
+                        if (thv) {
+                            thv = thv.cloneNode(true);
+                        }
+                    }
+                    if (!thv) {
+                        thv = document.createElement("div");
+                        thv.innerHTML = value;
+                    }
+                    html = [];
+                    for (var i = 0, t; t = thv.childNodes[i]; i++) {
+                        html.push(t);
+                    }
+                }
+                var xrhtml = [];
+                for (var i = 0, t; t = html[i]; i++) {
+                    xrhtml.push(new HtmlC(t));
+                }
+                //-> 数据双向绑定 
+                var codetml = {
+                    "code-html": xrhtml
+                }
+                var htmlss = new Ssangyong("html");
+                snowflake.code = xrhtml;
+                Twining(codetml["code-html"], "html", Ssangyong.getSsangyong("code-html", htmlss), "html", codetml, false, snowflake.$frost);
+                var recu = snowflake.$frost.$recursive;
+                recu.recursiveParamElem([codetml], [htmlss], snowflake.target);
+                recu.recursiveNext = false;
+            }
+        });
+
+        Frost.rain.add("f-code-javascript", {
+            //-> 不需要映射
+            binding: false,
             initTarget: function (snowflake, elem) {
                 var code = document.createElement("code");
                 code.innerHTML =
-                    '<span f-for="{key:$javascript_code}" ><span f-elem="${type}"></span></span>';
+                    '<span f-for="{key:javascript_code}" ><span f-elem="${type}"></span></span>';
                 elem.appendChild(code);
             },
             initAttr: function (snowflake) {
@@ -535,6 +626,10 @@
                 }
             },
             execute: function (snowflake, value) {
+                if (futil.is.ava(value)) {
+                    snowflake.code.splice(0, snowflake.code.length);
+                    return;
+                }
                 //-> 判值 是否等于 string 不等于则采用 toString 方式获取
                 var v;
                 if (typeof (value) != "string") {
@@ -557,7 +652,12 @@
                         codeBr.push({
                             type: "code-br",
                         });
-                        t.value = new Array(t.loc.start.column).join(" ") + t.value;
+                        if (t.type == "LineComment") {
+                            t.empty = new Array(t.loc.start.column).join(" ");
+                        } else {
+                            t.value = new Array(t.loc.start.column).join(" ") + t.value;
+                        }
+
                     }
                     up = t;
                     codeBr.push(t);
@@ -565,308 +665,303 @@
                 // codeBr 
                 var before = snowflake.params;
                 var js = {
-                    "$javascript_code": codeBr
+                    "javascript_code": codeBr
                 }
-                var newParam = [js];
-                Twining(js, "js", new Ssangyong("js"), "js", {}, false, snowflake.$frost);
-                newParam.push.apply(newParam, before);
-                snowflake.params = newParam;
-                console.log(snowflake);
-
+                snowflake.code = codeBr;
+                var jsss = new Ssangyong("js");
+                Twining(js.javascript_code, "js", Ssangyong.getSsangyong("javascript_code", jsss), "js", js, false, snowflake.$frost);
+                var recu = snowflake.$frost.$recursive;
+                recu.recursiveParamElem([js], [jsss], snowflake.target);
+                recu.recursiveNext = false;
             }
         })
-        // esprima.tokenize("// Life, Universe, and Everything \n var answer = 6 * 7;", { tokens: true ,comment: true,loc: true } )
-        function testCode(age, sex) {
-            return age + sex;
-        }
-        var COdeParam = {
-            tokens: true,
-            comment: true,
-            loc: true
-        };
-        var JSCode = {
-            text: testCode
+        var Code = {
+            js: function (age, sex) {
+                //-> 注意
+                return age + sex;
+            },
+            html: "temp-html"
         }
 
         var frostField = [{
-                "name": "$name",
-                note: "Frost 对象名称"
-            },
-            {
-                "name": "$ssangyong",
-                note: "Frost 双龙"
-            },
-            {
-                "name": "$changeValue",
-                note: "值改变监听"
-            },
-            {
-                "name": "$recursive",
-                note: "递归渲染"
-            },
-            {
-                "name": "Frost.rain",
-                note: "元素处理器"
-            },
-            {
-                "name": "Frost.attr",
-                note: "外部属性"
-            },
-            {
-                "name": "Frost.temp",
-                note: "模板对象"
-            },
+            "name": "$name",
+            note: "Frost 对象名称"
+        },
+        {
+            "name": "$ssangyong",
+            note: "Frost 双龙"
+        },
+        {
+            "name": "$changeValue",
+            note: "值改变监听"
+        },
+        {
+            "name": "$recursive",
+            note: "递归渲染"
+        },
+        {
+            "name": "Frost.rain",
+            note: "元素处理器"
+        },
+        {
+            "name": "Frost.attr",
+            note: "外部属性"
+        },
+        {
+            "name": "Frost.temp",
+            note: "模板对象"
+        },
         ];
 
         var frostFieldInfo = [{
-                name: "$name",
-                note: "Frost 名称用于 f-frost属性"
+            name: "$name",
+            note: "Frost 名称用于 f-frost属性"
+        },
+        {
+            name: "$ssangyong",
+            note: "元素数据关联",
+            attr: [{
+                name: "value",
+                note: "自己本身",
             },
             {
-                name: "$ssangyong",
-                note: "元素数据关联",
-                attr: [{
-                        name: "value",
-                        note: "自己本身",
-                    },
-                    {
-                        name: "name",
-                        note: "自己的访问名称"
-                    },
-                    {
-                        name: "updateView",
-                        note: "更新值函数",
-                        elem: "ssangyong-updateView"
-                    }, {
-                        name: "$appendSnowflaks",
-                        note: " 添加 Snowflak "
-                    },
-                    {
-                        name: "enumerable",
-                        note: "可枚举"
-                    }
-                ]
+                name: "name",
+                note: "自己的访问名称"
+            },
+            {
+                name: "updateView",
+                note: "更新值函数",
+                elem: "ssangyong-updateView"
             }, {
-                name: "$changeValue",
-                note: "值改变事件处理中心",
-                attr: [{
-                        name: "funcEvent",
-                        note: "事件容器 是个 GetObject 对象"
-                    },
-                    {
-                        name: "bubble",
-                        note: "事件触发器"
-                    },
-                    {
-                        name: "addEvent",
-                        note: "添加自定义事件处理"
-                    },
-                    {
-                        name: "removeEvent",
-                        note: "移除事件处理"
-                    }
-                ]
+                name: "$appendSnowflaks",
+                note: " 添加 Snowflak "
             },
             {
-                name: "$recursive",
-                note: "元素递归渲染处理",
-                attr: [{
-                        name: "recursiveNext",
-                        note: "是否继续渲染子集"
-                    },
-                    {
-                        name: "recursive",
-                        note: "渲染 指定元素",
-                    },
-                    {
-                        name: "recursiveParamElem",
-                        note: "渲染 指定元素，给定自定义参数，参数 ssangyong ，和指定节点"
-                    }
-                ]
-            }, {
-                name: "$entrust",
-                note: "事件委托",
+                name: "enumerable",
+                note: "可枚举"
+            }
+            ]
+        }, {
+            name: "$changeValue",
+            note: "值改变事件处理中心",
+            attr: [{
+                name: "funcEvent",
+                note: "事件容器 是个 GetObject 对象"
             },
             {
-                name: "Snowflake",
-                note: "属性处理",
-                attr: [{
-                    name: "target",
-                    note: "目标对象"
+                name: "bubble",
+                note: "事件触发器"
+            },
+            {
+                name: "addEvent",
+                note: "添加自定义事件处理"
+            },
+            {
+                name: "removeEvent",
+                note: "移除事件处理"
+            }
+            ]
+        },
+        {
+            name: "$recursive",
+            note: "元素递归渲染处理",
+            attr: [{
+                name: "recursiveNext",
+                note: "是否继续渲染子集"
+            },
+            {
+                name: "recursive",
+                note: "渲染 指定元素",
+            },
+            {
+                name: "recursiveParamElem",
+                note: "渲染 指定元素，给定自定义参数，参数 ssangyong ，和指定节点"
+            }
+            ]
+        }, {
+            name: "$entrust",
+            note: "事件委托",
+        },
+        {
+            name: "Snowflake",
+            note: "属性处理",
+            attr: [{
+                name: "target",
+                note: "目标对象"
 
-                }]
+            }]
+        },
+        {
+            name: "Frost.rain",
+            note: "属性调度中心",
+            attr: [{
+                name: "snowflakeKeyValue",
+                note: "所有可处理属性"
             },
             {
-                name: "Frost.rain",
-                note: "属性调度中心",
-                attr: [{
-                        name: "snowflakeKeyValue",
-                        note: "所有可处理属性"
-                    },
-                    {
-                        name: "add",
-                        note: "添加自定义属性处理",
-                    },
-                    {
-                        name: "get",
-                        note: "获取已添加的属性处理",
-                    },
-                    {
-                        name: "attributeProcessing",
-                        note: "属性处理调度中心"
-                    }
-                ]
+                name: "add",
+                note: "添加自定义属性处理",
             },
             {
-                name: "Frost.attr",
-                note: "自定义属性取值",
-                attr: [{
-                        name: "add",
-                        note: "添加自定义属性"
-                    },
-                    {
-                        name: "get",
-                        note: "获取自定义属性"
-                    }
-                ]
+                name: "get",
+                note: "获取已添加的属性处理",
             },
             {
-                name: "Frost.temp",
-                note: "模板容器",
-                attr: [{
-                        name: "init",
-                        note: "初始化函数"
-                    },
-                    {
-                        name: "set",
-                        note: "设置模板"
-                    },
-                    {
-                        name: "get",
-                        note: "获取模板,返回的是模板的副本"
-                    },
-                    {
-                        name: "addTemplate",
-                        note: "添加 <template> 模板"
-                    },
-                    {
-                        name: "initTemplate",
-                        note: "初始化所有 <template> 模板"
-                    },
-                    {
-                        name: "initLink",
-                        note: "从指定地址获取模板数据"
-                    }
-                ]
+                name: "attributeProcessing",
+                note: "属性处理调度中心"
+            }
+            ]
+        },
+        {
+            name: "Frost.attr",
+            note: "自定义属性取值",
+            attr: [{
+                name: "add",
+                note: "添加自定义属性"
             },
             {
-                name: "Form",
-                note: "表单对象"
+                name: "get",
+                note: "获取自定义属性"
+            }
+            ]
+        },
+        {
+            name: "Frost.temp",
+            note: "模板容器",
+            attr: [{
+                name: "init",
+                note: "初始化函数"
             },
             {
-                name: "GetObject",
-                note: "GetObject 用于 代替 Object 存储数据 "
+                name: "set",
+                note: "设置模板"
             },
             {
-                name: "util",
-                note: "工具对象"
+                name: "get",
+                note: "获取模板,返回的是模板的副本"
             },
+            {
+                name: "addTemplate",
+                note: "添加 <template> 模板"
+            },
+            {
+                name: "initTemplate",
+                note: "初始化所有 <template> 模板"
+            },
+            {
+                name: "initLink",
+                note: "从指定地址获取模板数据"
+            }
+            ]
+        },
+        {
+            name: "Form",
+            note: "表单对象"
+        },
+        {
+            name: "GetObject",
+            note: "GetObject 用于 代替 Object 存储数据 "
+        },
+        {
+            name: "util",
+            note: "工具对象"
+        },
 
         ];
 
         var attrs = [{
-                "name": "f-text",
-                note: "文本元素值"
-            },
-            {
-                "name": "f-number",
-                note: "文本数字处理"
-            },
-            {
-                "name": "f-date",
-                note: "文本日期处理"
-            },
-            {
-                "name": "f-time",
-                note: "文本时间处理"
-            },
-            {
-                "name": "f-datetime",
-                "note": "日期时间处理"
-            },
-            {
-                "name": "f-html",
-                note: "元素 html文档"
-            },
-            {
-                "name": "f-href",
-                note: "跳转路径"
-            },
-            {
-                "name": "f-src",
-                note: "资源访问路径"
-            },
-            {
-                "name": "f-value",
-                note: "表单控件值"
-            },
-            {
-                "name": "f-attr-name",
-                note: "元素属性"
-            },
-            {
-                "name": "f-attr",
-                note: "元素属性多个"
-            },
-            {
-                "name": "f-switch",
-                note: "条件判断switch流"
-            },
-            {
-                "name": "f-show",
-                note: "元素显示和隐藏"
-            },
-            {
-                "name": "f-data",
-                note: "元素data-*属性"
-            },
-            {
-                "name": "f-func",
-                note: "事件委托"
-            },
-            {
-                "name": "f-func-data",
-                note: "事件委托参数"
-            },
-            {
-                "name": "f-frost",
-                note: "范围控制"
-            },
-            {
-                "name": "f-for",
-                note: "元素循环"
-            },
-            {
-                "name": "f-class",
-                note: "元素class"
-            },
-            {
-                "name": "f-elem",
-                note: "模板"
-            },
-            {
-                "name": "f-temp",
-                note: "模板来源"
-            },
-            {
-                name: "f-skip",
-                note: "跳过渲染"
-            }
+            "name": "f-text",
+            note: "文本元素值"
+        },
+        {
+            "name": "f-number",
+            note: "文本数字处理"
+        },
+        {
+            "name": "f-date",
+            note: "文本日期处理"
+        },
+        {
+            "name": "f-time",
+            note: "文本时间处理"
+        },
+        {
+            "name": "f-datetime",
+            "note": "日期时间处理"
+        },
+        {
+            "name": "f-html",
+            note: "元素 html文档"
+        },
+        {
+            "name": "f-href",
+            note: "跳转路径"
+        },
+        {
+            "name": "f-src",
+            note: "资源访问路径"
+        },
+        {
+            "name": "f-value",
+            note: "表单控件值"
+        },
+        {
+            "name": "f-attr-name",
+            note: "元素属性"
+        },
+        {
+            "name": "f-attr",
+            note: "元素属性多个"
+        },
+        {
+            "name": "f-switch",
+            note: "条件判断switch流"
+        },
+        {
+            "name": "f-show",
+            note: "元素显示和隐藏"
+        },
+        {
+            "name": "f-data",
+            note: "元素data-*属性"
+        },
+        {
+            "name": "f-func",
+            note: "事件委托"
+        },
+        {
+            "name": "f-func-data",
+            note: "事件委托参数"
+        },
+        {
+            "name": "f-frost",
+            note: "范围控制"
+        },
+        {
+            "name": "f-for",
+            note: "元素循环"
+        },
+        {
+            "name": "f-class",
+            note: "元素class"
+        },
+        {
+            "name": "f-elem",
+            note: "模板"
+        },
+        {
+            "name": "f-temp",
+            note: "模板来源"
+        },
+        {
+            name: "f-skip",
+            note: "跳过渲染"
+        }
         ];
         var attrInfo = [{
-                name: "f-text",
-                note: "元素文本值",
-                introduceHtml: `<body>
+            name: "f-text",
+            note: "元素文本值",
+            introduceHtml: `<body>
                     <div>
                         <h4>UserInfo:</h4>
                         <p>用户名字: <span f-text="user.name"></span></p>
@@ -875,7 +970,7 @@
                         <p>用户职业: <span f-text="{attr:user-Occupation}"></span></p>
                     </div>
                     <body>`,
-                introduceResult: `<body>
+            introduceResult: `<body>
                     <div>
                         <h4>UserInfo:</h4>
                         <p>用户名字: <span>Mei</span></p>
@@ -884,243 +979,243 @@
                         <p>用户职业: <span>programming</span></p>
                     </div>
                     <body>`,
-                attr: [{
-                        name: "key",
-                        note: "取值地址",
-                        elem: "f-text-key",
-                    },
-                    {
-                        name: "eval",
-                        note: "自定义运算",
-                        elem: "f-text-eval"
-                    }
-                ]
+            attr: [{
+                name: "key",
+                note: "取值地址",
+                elem: "f-text-key",
             },
             {
-                name: "f-number",
-                note: "元素文本值,数字处理",
-                attr: [{
-                        name: "key",
-                        note: "取值地址",
-                        elem: "f-text-key",
-                    },
-                    {
-                        name: "bin",
-                        note: "进制",
-                        elem: "f-number-bin"
-                    },
-                    {
-                        name: "round",
-                        note: "舍入",
-                        elem: "f-number-round"
-                    },
-                    {
-                        name: "retain",
-                        note: "保留几位",
-                        elem: "f-number-retain"
-                    },
-                    {
-                        name: 'format',
-                        note: "格式化数字",
-                        elem: "f-number-format"
-                    }
-
-                ]
-
-            },
-            {
-                name: "f-date",
-                note: "元素文本值,时间处理",
-                format: "yyyy-MM-dd",
-                attr: [{
-                        name: "key",
-                        note: "取值",
-                        elem: "f-text-key"
-                    },
-                    {
-                        name: "format",
-                        note: "时间格式",
-                        elem: "f-date-fromat"
-                    }
-
-                ]
-            },
-            {
-                name: "f-time",
-                note: "元素文本值,时间处理",
-                format: "HH:mm:ss",
-                attr: [{
-                        name: "key",
-                        note: "取值",
-                        elem: "f-text-key"
-                    },
-                    {
-                        name: "format",
-                        note: "时间格式",
-                        elem: "f-date-fromat"
-                    }
-
-                ]
-            },
-            {
-                name: "f-datetime",
-                note: "元素文本值,时间处理",
-                format: "yyyy-MM-dd HH:mm:ss",
-                attr: [{
-                        name: "key",
-                        note: "取值",
-                        elem: "f-text-key"
-                    },
-                    {
-                        name: "format",
-                        note: "时间格式",
-                        elem: "f-date-fromat"
-                    }
-
-                ]
-            },
-            {
-                name: "f-href",
-                note: "连接路径",
-            }, {
-                name: "f-src",
-                note: "资源访问",
-            }, {
-                name: "f-value",
-                note: "控件值",
-                attr: [{
-                        name: "key",
-                        note: "取值",
-                        elem: "f-text-key"
-                    },
-                    {
-                        name: "name",
-                        note: "控件 name",
-                        elem: "f-value-name"
-                    }, {
-                        name: "model",
-                        note: "模型化，",
-                        elem: "f-value-model"
-                    }
-                ]
-            },
-            {
-                name: "f-attr-name",
-                note: "元素属性",
-                attr: [{
-                        name: "name",
-                        note: "属性名称",
-                        elem: "f-attr-name-name"
-                    },
-                    {
-                        name: "value",
-                        note: "属性值 取值地址",
-                        elem: "f-attr-name-value"
-                    }
-                ]
-            },
-            {
-                name: "f-attr",
-                note: "元素属性设置",
-            },
-            {
-                name: "f-switch",
-                note: "switch 流开关 需要和 f-case , f-default",
-                attr: [{
-                    name: "key",
-                    note: "取值",
-                    elem: "f-text-key"
-                }, ]
-            },
-            {
-                name: "f-case",
-                note: "switch 值比对,仅在 f-switch 下有效",
-            },
-            {
-                name: "f-default",
-                note: "switch 默认值,仅在 f-switch 下有效",
-            },
-            {
-                name: "f-show",
-                note: "是否显示",
-                attr: [{
-                    name: "key",
-                    note: "取值",
-                    elem: "f-text-key"
-                }]
-            },
-            {
-                name: "f-data",
-                note: "设置 dataset 对象"
-            },
-            {
-                name: "f-func",
-                note: "事件委托",
-            },
-            {
-                name: "f-func-data",
-                note: "事件委托参数",
-            }, {
-                name: "f-frost",
-                note: " Frost 接管范围"
-            },
-            {
-                name: "f-for",
-                note: "循环",
-                attr: [{
-                        name: "key",
-                        note: "取值",
-                        elem: "f-text-key"
-                    },
-                    {
-                        name: "index",
-                        note: "当前迭代下标",
-                        elem: "f-for-index"
-                    },
-                    {
-                        name: "name",
-                        note: "引用名称",
-                        elem: "f-for-name"
-                    },
-                    {
-                        name: "loop",
-                        note: "循环过滤器",
-                        elem: "f-for-loop",
-                    },
-                    {
-                        name: "elem",
-                        note: "指定目标模板",
-                        elem: "f-for-elem"
-                    }
-                ]
-            },
-            {
-                name: "f-class",
-                note: "元素 class",
-                attr: [{
-                        name: "key",
-                        note: "取值",
-                        elem: "f-text-key"
-                    },
-                    {
-                        name: "eval",
-                        note: "自定义运算",
-                        elem: "f-class-eavl"
-                    }
-                ]
-            },
-            {
-                name: "f-elem",
-                note: "模板引用",
-            },
-            {
-                name: "f-temp",
-                note: "添加自定义模板",
-            },
-            {
-                name: "f-skip",
-                note: "跳过渲染"
+                name: "eval",
+                note: "自定义运算",
+                elem: "f-text-eval"
             }
+            ]
+        },
+        {
+            name: "f-number",
+            note: "元素文本值,数字处理",
+            attr: [{
+                name: "key",
+                note: "取值地址",
+                elem: "f-text-key",
+            },
+            {
+                name: "bin",
+                note: "进制",
+                elem: "f-number-bin"
+            },
+            {
+                name: "round",
+                note: "舍入",
+                elem: "f-number-round"
+            },
+            {
+                name: "retain",
+                note: "保留几位",
+                elem: "f-number-retain"
+            },
+            {
+                name: 'format',
+                note: "格式化数字",
+                elem: "f-number-format"
+            }
+
+            ]
+
+        },
+        {
+            name: "f-date",
+            note: "元素文本值,时间处理",
+            format: "yyyy-MM-dd",
+            attr: [{
+                name: "key",
+                note: "取值",
+                elem: "f-text-key"
+            },
+            {
+                name: "format",
+                note: "时间格式",
+                elem: "f-date-fromat"
+            }
+
+            ]
+        },
+        {
+            name: "f-time",
+            note: "元素文本值,时间处理",
+            format: "HH:mm:ss",
+            attr: [{
+                name: "key",
+                note: "取值",
+                elem: "f-text-key"
+            },
+            {
+                name: "format",
+                note: "时间格式",
+                elem: "f-date-fromat"
+            }
+
+            ]
+        },
+        {
+            name: "f-datetime",
+            note: "元素文本值,时间处理",
+            format: "yyyy-MM-dd HH:mm:ss",
+            attr: [{
+                name: "key",
+                note: "取值",
+                elem: "f-text-key"
+            },
+            {
+                name: "format",
+                note: "时间格式",
+                elem: "f-date-fromat"
+            }
+
+            ]
+        },
+        {
+            name: "f-href",
+            note: "连接路径",
+        }, {
+            name: "f-src",
+            note: "资源访问",
+        }, {
+            name: "f-value",
+            note: "控件值",
+            attr: [{
+                name: "key",
+                note: "取值",
+                elem: "f-text-key"
+            },
+            {
+                name: "name",
+                note: "控件 name",
+                elem: "f-value-name"
+            }, {
+                name: "model",
+                note: "模型化，",
+                elem: "f-value-model"
+            }
+            ]
+        },
+        {
+            name: "f-attr-name",
+            note: "元素属性",
+            attr: [{
+                name: "name",
+                note: "属性名称",
+                elem: "f-attr-name-name"
+            },
+            {
+                name: "value",
+                note: "属性值 取值地址",
+                elem: "f-attr-name-value"
+            }
+            ]
+        },
+        {
+            name: "f-attr",
+            note: "元素属性设置",
+        },
+        {
+            name: "f-switch",
+            note: "switch 流开关 需要和 f-case , f-default",
+            attr: [{
+                name: "key",
+                note: "取值",
+                elem: "f-text-key"
+            },]
+        },
+        {
+            name: "f-case",
+            note: "switch 值比对,仅在 f-switch 下有效",
+        },
+        {
+            name: "f-default",
+            note: "switch 默认值,仅在 f-switch 下有效",
+        },
+        {
+            name: "f-show",
+            note: "是否显示",
+            attr: [{
+                name: "key",
+                note: "取值",
+                elem: "f-text-key"
+            }]
+        },
+        {
+            name: "f-data",
+            note: "设置 dataset 对象"
+        },
+        {
+            name: "f-func",
+            note: "事件委托",
+        },
+        {
+            name: "f-func-data",
+            note: "事件委托参数",
+        }, {
+            name: "f-frost",
+            note: " Frost 接管范围"
+        },
+        {
+            name: "f-for",
+            note: "循环",
+            attr: [{
+                name: "key",
+                note: "取值",
+                elem: "f-text-key"
+            },
+            {
+                name: "index",
+                note: "当前迭代下标",
+                elem: "f-for-index"
+            },
+            {
+                name: "name",
+                note: "引用名称",
+                elem: "f-for-name"
+            },
+            {
+                name: "loop",
+                note: "循环过滤器",
+                elem: "f-for-loop",
+            },
+            {
+                name: "elem",
+                note: "指定目标模板",
+                elem: "f-for-elem"
+            }
+            ]
+        },
+        {
+            name: "f-class",
+            note: "元素 class",
+            attr: [{
+                name: "key",
+                note: "取值",
+                elem: "f-text-key"
+            },
+            {
+                name: "eval",
+                note: "自定义运算",
+                elem: "f-class-eavl"
+            }
+            ]
+        },
+        {
+            name: "f-elem",
+            note: "模板引用",
+        },
+        {
+            name: "f-temp",
+            note: "添加自定义模板",
+        },
+        {
+            name: "f-skip",
+            note: "跳过渲染"
+        }
         ];
         var view = {
             type: "frost"
@@ -1142,7 +1237,7 @@
                         <h1>your data</h1>
                     <body>..</html>`
                 },
-                javascriptCode: JSCode
+                javascriptCode: Code
             }
         }
         console.time("vime")
@@ -1169,24 +1264,7 @@
         }, false);
     </script>
     <script>
-        function HtmlC(htm) {
-            this.children = [];
-            if (htm instanceof Text) {
-                this.type = "html-text";
-                this.value = htm.data;
-            } else if (htm instanceof Comment) {
-                this.type = "html-note";
-                this.value = htm.data;
-            } else if (htm instanceof HTMLElement) {
-                this.type = "html-elem";
-                this.value = htm.tagName.toLocaleLowerCase();
-                //-> 循环 遍历
-                var ch = htm.childNodes;
-                for (var i = 0, t; t = ch[i]; i++) {
-                    this.children.push(new HtmlC(t));
-                }
-            }
-        }
+
 
         function Out(hc, arr) {
             if (hc.type == "html-text") {
