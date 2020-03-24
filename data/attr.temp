@@ -1,0 +1,378 @@
+<template f-temp="temp-html">
+    <div>
+        <h1>这是一个Html 解析器，用于在页面展示你的html代码 </h1>
+        <input type="button" value="按钮一个">
+        <!-- 注释 -->
+        <span>你要注意</span>
+        <p id="test-all-one" class="attr" style="color: red;"> 我们 </p>
+        <img src="{url}" alt="一朵小花" style="border-radius: 15px;">
+    </div>
+</template>
+<template f-temp="util">
+    <div>
+
+    </div>
+</template>
+<template f-temp="GetObject">
+    <div>
+
+    </div>
+</template>
+
+<template f-temp="Form">
+    <div>
+        ...
+    </div>
+</template>
+<template f-temp="Snowflake">
+    <p>...</p>
+</template>
+<template f-temp="Frost.temp">
+    <div>
+        <p>模板容器</p>
+    </div>
+</template>
+<template f-temp="Frost.attr">
+    <div>
+        <p>自定义属性的存在主要时处理部分元素属性过于长时所造成的可读性差</p>
+        <p>也是提供给开发者使用的 避免在html中写属性</p>
+    </div>
+</template>
+<template f-temp="Frost.rain">
+    <div>
+        <h4>属性调度中心</h4>
+    </div>
+</template>
+<template f-temp="$entrust">
+    <p>事件处理中心</p>
+</template>
+<template f-temp="$recursive">
+    <p>递归渲染</p>
+</template>
+<template f-temp="$changeValue">
+    <p> 值改变处理中心 </p>
+</template>
+<template f-temp="ssangyong-updateView">
+    <p> 更新值函数: </p>
+    <p> function (value[新的值] ,beforeValue[之前的值，没有则 为 为定义]) </p>
+</template>
+<template f-temp="$ssangyong">
+    <p> 作用与 参数 data，存储 数据与元素之间的关联 </p>
+</template>
+<template f-temp="$name">
+    <p>
+        这个属性目前值适用于 f-frost 元素元素，除此之外 没有其他的用处
+    </p>
+</template>
+<template f-temp="f-skip">
+    <div>
+        <p>f-skip 作用是跳过渲染，主要作用是提高性能，但有很多元素 但是不会渲染时 你可以手动添加此属性 达到跳过的目的</p>
+    </div>
+</template>
+<template f-temp="f-temp">
+    <div>
+        自定义模板， <strong>Frost</strong> 会自动扫描 template 元素， 进行添加
+    </div>
+</template>
+<template f-temp="f-elem">
+    <div>
+        <p>模板引用</p>
+    </div>
+</template>
+<template f-temp="f-class-eavl">
+    <p> 内部实现 :
+        <p> Function("classValue", "snowflake", "return " + snowflake.value.eval)(classValue, snowflake) </p>
+        返回值就是class 值
+    </p>
+</template>
+<template f-temp="f-class">
+    <p>元素class 控制器</p>
+</template>
+<template f-temp="f-for-elem">
+    <div>
+        与 f-elem 效果类似，你也可以使用 f-elem 代替， 不过 f-elem 必须在 f-for 之前
+    </div>
+</template>
+<template f-temp="f-for-loop">
+    <div>
+        循环过滤器 ,内部实现
+        <p>Function("value", "index", "param", "snowflak", ("return " + ofLoop));</p>
+        <p>其中 ofLoop 就是 loop </p>
+    </div>
+</template>
+<template f-temp="f-for-name">
+    <div>
+        循环体引用名称，可学的，如果有属性引用不在参数环境中 可能会导致该 属性不可用
+    </div>
+</template>
+<template f-temp="f-for-index">
+    <p>当前迭代的下标</p>
+</template>
+<template f-temp="f-for">
+    <p> 循环： 允许使用过滤条件，允许使用数字来 循环 </p>
+</template>
+<template f-temp="f-frost">
+    <p> f-frost 是控制 渲染范围的 , 当一个页面有多个 <strong>Frost</strong> 对象时， 你可能会遇到数据交叉 渲染， 这时侯 f-frost 就尤其重要了</p>
+    <p> f-frost 判断依据是 创建时给定的name值来作判断的, 该熟悉极少用到 也不推荐使用， 在设计模式上稍稍改一下 也许就不会使用多个 f-frost 了 </p>
+</template>
+<template f-temp="f-func-data">
+    <div>
+        <p>事件委托从参数, 对象键值对 , key 是引用名称,value值地址 </p>
+        <p>参数获取是function 中的this</p>
+    </div>
+</template>
+<template f-temp="f-func">
+    <p> 事件委托,只支持 对象形态 , 如果对象值是固定的，那么就不推荐使用 此属性，而是直接写在元素上 </p>
+</template>
+<template f-temp="f-data">
+    <div>
+        <p> 只支持 对象形态 , 他和 f-attr 不同，f-data 会把 "data-" 加上 </p>
+    </div>
+</template>
+<template f-temp="f-show">
+    <p> 通过给定的值来判断， 为 true 才会显示 ， false 则为隐藏 </p>
+</template>
+<template f-temp="f-default">
+    <p>没有对应的 f-default 处理函数 ，f-default 只有在 f-switch 下才会生效，</p>
+    <p>f-switch 下 允许有多个 元素 有 f-default 属性</p>
+</template>
+<template f-temp="f-case">
+    <p> <strong>Frost</strong> 没有对应的 f-case 处理函数 ，f-case 只有在 f-switch 下才会生效， </p>
+    <p>
+        f-case 允许使用对象引用 , 语法如下
+        <p> f-case = ${data.value} ,如果没有使用 ${} 包括起来 程序会以字符串的方式来处理 </p>
+    </p>
+    <p> f-case 可以和 f-default 同时存在一个元素上 </p>
+</template>
+<template f-temp="f-switch">
+    <div>
+        <p> <strong>f-switch</strong>流程控制, 你需要结合着 f-case , f-default</p>
+        <p> f-case 是用于数据比对的 </p>
+        <p> f-default 当没有数据匹配上时 才会执行 </p>
+        <p> 不匹配的数据 只会隐藏起来，而不是从 节点上移除 </p>
+    </div>
+</template>
+<template f-temp="f-attr">
+    <div>
+        <p> <strong>f-attr</strong> 实质是使用 <a href="#f-attr-name">f-attr-name</a> 来实现的. </p>
+        <p> <strong>f-attr</strong> 是用来处理多个元素属性的, 他支持 数组 , 对象形态, 意味着有些时候你可以使用简写 </p>
+        <div>
+            <h4>数组</h4>
+            <p> [attrName,names] => 内部会处理为 {attrName:attrName,names:names}</p>
+        </div>
+        <div>
+            <h4>对象</h4>
+            <p>
+                <span>{attrName:attrName,names:names}</span>;
+                <p>对象形态 会对这个对象进行遍历, 把每个遍历对象 转换为 <a href="#f-attr-name">f-attr-name</a> 对象</p>
+                <p>
+                    <span>就像这样</span>:
+                    <pre>
+                            <code tyye="javascript">
+                                var attrs =  {attrName:attrName,names:names};
+                                for(var key in attrs){
+                                    new f-attr-name({
+                                        name:key,
+                                        value: getValue(attrs[key],[data..])
+                                    })
+                                }
+                            </code>
+                    </pre>
+                </p>
+            </p>
+        </div>
+    </div>
+</template>
+<template f-temp="f-attr-name">
+    <div>
+        <p>f-attr-name 没有 key, f-attr-name 只能设置一个属性 ， 如果要设置多个元素属性请使用 <a href="#f-attr">f-attr</a></p>
+        <p>需要注意，但 value === undefined 时,这个属性会被移除掉，直到 value 不等于 undefined </p>
+    </div>
+</template>
+<template f-temp="f-attr-name-name">
+    <div>
+        <p>元素属性 name 值</p>
+    </div>
+</template>
+<template f-temp="f-attr-name-value">
+    <div>
+        <p>元素属性值</p>
+    </div>
+</template>
+<template f-temp="f-value-model">
+    <p>模型化控件 ， 当给定的值时，控件值改变是，如果给定的地址不可用时 会更新<strong>f-value-key</strong>映射的值, 而非 f-value-model </p>
+</template>
+<template f-temp="f-value-name">
+    <p> 指定 name 值 不太推荐使用 , 后期会使用 ${name} 取值， 目前没有， 您也可以使用 <a href="#f-attr">f-attr</a>来实现 </p>
+</template>
+<template f-temp="f-value">
+    <div>
+        <p>表单控件</p>
+    </div>
+</template>
+<template f-temp="f-src">
+    <p> f-src 的用法和 <a href="#f-href">f-href</a>一致,后续可能会提供懒加载</p>
+</template>
+<template f-temp="f-text-key">
+    <div>
+        <p>
+            <strong>key</strong>
+            <span>是用于指定取值的路径，但值改变时 他会跟着改变</span>
+        </p>
+    </div>
+</template>
+<template f-temp="f-text-eval">
+    <div>
+        <p> javascript 运算表达式， value 是获取的值引用 , 表达式允许是个 javascript 运算式，也可以是个function， </p>
+    </div>
+</template>
+<template f-temp="f-text">
+    <div>
+        <h4>例子：</h4>
+        <div>
+            <div class="code-content">
+                <h6>代码 脚本代码</h6>
+                <pre class="code-javascript"  f-code-javascript="{value:text}">
+//-> 添加自定义属性取值
+Frost.attr.add("user-Occupation",{key:"user.Occupation"});
+function AgeSegment(value){
+    if(!(value>1)){return "襁褓";}
+    if(!(value>3)){return "孩提";}
+    if(value>=100){return "期颐";}
+}
+//-> 给定用户信息
+param.user = { 
+    name:"Mei",
+    age:20,
+    sex:0,
+    Occupation:"programming"
+};
+                </pre>
+            </div>
+            <div class="code-content">
+                <h6>渲染之前的html源码</h6>
+                <pre f-code-html="{key:introduceHtml}" class="code-html"></pre>
+            </div>
+            <div class="code-content">
+                <h6>渲染之后的 html </h6>
+                <pre f-code-html="{key:introduceResult}" class="code-html"></pre>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template f-temp="f-number">
+    <div>
+    </div>
+</template>
+<template f-temp="f-number-bin">
+    <div>
+        <p>用于指定你需要显示的进制，默认是10进制</p>
+        <div class="code-javascript"  f-code-javascript="{value:text}">
+//-> bin 数字类型 允许 2 8 10 16 其他的值会报错
+{key:"{地址}", bin : 8 }
+        </div>
+        <div class="code-content">
+            <p>脚本代码</p>
+            <pre class="code-javascript"  f-code-javascript="{value:text}">
+new Frosr(body,{
+    data:{
+        number:123456
+    }
+})
+            </pre>
+        </div>
+        <div class="code-content">
+            <p>html 页面代码</p>
+            <pre class="code-html"  f-code-html="code.f-number-bin"></pre>
+        </div>
+    </div>
+</template>
+<template f-temp="f-number-round">
+    <div>
+        <p>这里的舍入不是指四舍五入, 是通过给定的值来作判断舍入的</p>
+        <div class="code-javascript"  f-code-javascript="{value:text}">
+            //-> bin 数字类型 允许 2 8 10 16 其他的值会报错
+            {key:"{地址}", round : 4 }
+        </div>
+        <div class="code-content">
+            <p>脚本代码</p>
+            <pre class="code-javascript" f-code-javascript="{value:text}">
+new Frosr(body,{
+    data:{
+        number:159.84,
+        avg:954.88
+    }
+});
+            </pre>
+        </div>
+        <div class="code-content">
+            <p>页面代码  <span f-number='{key:code.number,round:8}'></span> </p>
+            <pre class="code-html" f-code-html="code.f-number-round"></pre>
+        </div>
+    </div>
+</template>
+<template f-temp="f-number-retain">
+    <p>小数保留位数 若给定值是负数则是向前</p>
+</template>
+<template f-temp="f-number-format">
+    <div>
+        <p>数字格式化</p>
+        <p>{</p>
+        <p>
+            <span>repair(Boolean)</span>: 是否补位，但位数不足时，补位
+        </p>
+        <p>
+            <span>int(Number)</span>:整数位 只有补位 开启时才会有效
+        </p>
+        <p>
+            <span>decimal(Number)</span>:小数位 只有补位 开启时才会有效
+        </p>
+        <p>
+            <span>len(Number)</span>: 分组，多少个数字为一组
+        </p>
+        <p>
+            <span>str:(String)</span> 分组分割符
+        </p>
+        <p>}</p>
+    </div>
+</template>
+<template f-temp="f-date">
+    <div>
+
+    </div>
+</template>
+<template f-temp="f-date-fromat">
+    <p>时间格式: 你期望的格式, 默认为 { fromat: <span f-text="format"></span>}</p>
+</template>
+<template f-temp="f-time">
+    <div>
+
+    </div>
+</template>
+<template f-temp="f-datetime">
+    <p>顾名思义,他是 f-date 和 f-time 的结合体</p>
+</template>
+<template f-temp="f-href">
+    <p> f-href 属性不同于其他的属性那样，其他属性采用 {} 对象操作， 而 f-href 是直接使用字符操作 </p>
+    <p> f-href 的取值方是使用 {} 来去值的 列如这样 </p>
+    <p> http://127.0.0.1:5500/doc/#{anchorPoint} ，{anchorPoint} 就是获取锚点的值 </p>
+</template>
+<template f-temp="detailed">
+    <div>
+        <h3> <a f-attr="{id:name}" f-text="name"></a> </h3>
+        <ul f-for="attr">
+            <li>
+                <details open>
+                    <summary>
+                        <span f-text="name"></span>: <span f-text="note"></span>
+                    </summary>
+                    <div>
+                        <div f-elem="${elem}"></div>
+                    </div>
+                </details>
+            </li>
+        </ul>
+        <div f-elem="${name}"></div>
+    </div>
+</template>

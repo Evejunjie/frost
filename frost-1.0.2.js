@@ -88,7 +88,7 @@
                                     Object.defineProperty(sgdata, snowflake.key, sgNew);
                                     sgNew.$appendSnowflaks(snowflake);
                                 } else {
-                                    console.warn("找不到 [" + snowflake.name + "] ",snowflake);
+                                    console.warn("找不到 [" + snowflake.name + "] ", snowflake);
                                 }
                             } else {
                                 //   console.warn("找不到 [" + snowflake.name + "] ", snowflake.target);
@@ -104,6 +104,7 @@
      * 模板渲染
      */
     function Template() { }
+
     Template.prototype = {
         /**
          * 初始化模板信息
@@ -133,7 +134,7 @@
         get: function (key) {
             var te = this["Temp-".concat(key)];
             if (is.ava(te)) {
-                throw "没有找到这样的模板[" + key + "]";
+                throw new Error("没有找到这样的模板[" + key + "]");
             }
             return te.cloneNode(true);
         },
@@ -162,8 +163,8 @@
             this["Temp-".concat(key)] = temp.content;
         },
         //-> 加载所有的 template
-        initTemplate: function () {
-            var ts = document.querySelectorAll("template"),
+        initTemplate: function (elem) {
+            var ts =  (elem || document).querySelectorAll("template[f-temp]"),
                 key;
             for (var i = 0, t; t = ts[i]; i++) {
                 key = t.getAttribute("f-temp");
@@ -172,22 +173,6 @@
                     this.addTemplate(key, t);
                     util.elem.remove(t);
                 }
-            }
-        },
-        /**
-         * 加载链接模板
-         * @param {Function} func 当所有的模板都加载完毕时
-         */
-        initLink: function (func) {
-            var li = document.querySelectorAll("link[template]");
-            for (var i = 0, t; t = li[i]; i++) {
-                //-> 处理请求
-                Ajax({
-                    action: t.getAttribute("href"),
-                    loadend: function () {
-                        // this.ajax
-                    }
-                });
             }
         }
     }
@@ -343,16 +328,16 @@
             }
         }
         if (getsets) {
-            
+
             Object.defineProperty(value, "__getset__", new $__getset__(getsets));
         }
     }
 
-    function $__getset__(value){
-        this.get=function(){
+    function $__getset__(value) {
+        this.get = function () {
             return value;
         }
-        this.set=NullFunc;
+        this.set = NullFunc;
     }
 
     /**
@@ -632,7 +617,7 @@
         }
     }
 
-    function addDefineProperty(obj, name, param){
+    function addDefineProperty(obj, name, param) {
         return Object.defineProperty(obj, name, param);
     }
     /**
@@ -961,7 +946,7 @@
         });
     }
     SnowCoverArray.prototype = Array.prototype;
-    window.SnowCoverArray= SnowCoverArray;
+    window.SnowCoverArray = SnowCoverArray;
     window.Ssangyong = Ssangyong;
     window.Twining = Twining;
 
@@ -2382,6 +2367,42 @@
     wind.Frost = Frost;
     var rain = new Rain();
     var temp = new Template();
+
+    /**
+    * 加载链接模板
+    * @param {Function} func 当所有的模板都加载完毕时
+    */
+    Frost.linkTemp = function (links, callback) {
+        var index = 0;
+        var responses = {};
+        var len = links.length;
+        var next = function (ajax, url) {
+            var res = ajax.responseText
+            responses[url] = res;
+            var div = document.createElement("div");
+            div.innerHTML = res;
+            temp.initTemplate(div);
+            if (index == len) {
+                //-> 执行回调
+                if (is.func(callback)) {
+                    callback();
+                }
+            }
+        }
+        for (var i = 0, t; t = links[i]; i++) {
+            var ajax = Ajax({
+                action: t,
+                method: "GET",
+                loadend: (function (t) {
+                    return function (event) {
+                        index++;
+                        next(event.target, t);
+                    }
+                })(t)
+            });
+        }
+    }
+
     var attrKV = new ElemAttributes();
     Frost.rain = rain;
     Frost.temp = temp;

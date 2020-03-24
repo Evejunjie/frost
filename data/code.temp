@@ -1,0 +1,39 @@
+<template f-temp="Identifier" note="变量"><span class="code-value code-identifier" f-text="value"></span></template>
+<template f-temp="Punctuator" note="符号"><span class="code-value code-punctuator" f-text="value"></span></template>
+<template f-temp="Keyword" note="关键字"> <span class="code-value code-keyword" f-text="value"></span> </template>
+<template f-temp="LineComment" note="注释">
+    <span class="code-linecomment"><span f-text="empty" class="code-value code-linecomment"></span>//<span
+            class="code-value code-linecomment" f-text="value"></span></span>
+</template>
+<template f-temp="String" note="字符串"><span f-text="value" class="code-value code-string"></span></template>
+<template f-temp=Boolean note="布尔值"><span f-text="value" class="code-value code-boolean"></span></template>
+<template f-temp="Numeric" note="数字"><span f-text="value" class="code-value code-numeric"></span></template>
+<template f-temp="code-br" note="换行">
+    <br>
+</template>
+<!--  页面代码   -->
+<template f-temp="html-text"><span f-text="value" class="code-html-string code-value"></span></template>
+<template f-temp="html-elem-one">
+    <span><span class="code-html-node-symbol">&lt;</span><span f-text="value"
+            class="code-html-node-name"></span><span note="属性"><span f-for="attr"> <span f-text="key"
+                    class="code-html-node-attr-name"></span><span><span
+                        class="code-html-attr-eq">=</span>"</span><span class="code-html-node-attr-value"
+                    f-text="value"></span><span>"&nbsp;</span></span></span><span
+            class="code-html-node-symbol">/&gt;</span></span>
+</template>
+<template f-temp="html-note">
+    <span class="code-html-note">&lt;!--</span>
+    <span f-text="value" class="code-html-note-text"></span>
+    <span class="code-html-note">--&gt;</span>
+</template>
+<template f-temp="html-elem">
+    <span><span class="code-html-node-symbol">&lt;</span><span f-text="value"
+            class="code-html-node-name"></span><span note="属性"><span f-for="attr"> <span f-text="key"
+                    class="code-html-node-attr-name"></span><span><span
+                        class="code-html-attr-eq">=</span>"</span><span class="code-html-node-attr-value"
+                    f-text="value"></span><span>"&nbsp;</span></span></span><span
+            class="code-html-node-symbol">&gt;</span><span note="孩子" f-for="children"><span
+                f-elem="${elem}"></span></span><span class="code-html-node-symbol">&lt;</span><span
+            class="code-html-node-name" f-text="value"></span><span
+            class="code-html-node-symbol">/&gt;</span></span>
+</template>
