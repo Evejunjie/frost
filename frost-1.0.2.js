@@ -2869,7 +2869,7 @@
             if (snowflak.value.eval) {
                 isShow = Function("value", "return " + snowflak.value.eval)(value);
             } else {
-                isShow == !!value;
+                isShow = !!value;
             }
             if (isShow) {
                 //-> 显示
