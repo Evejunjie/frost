@@ -45,6 +45,10 @@
          * 属性处理调度中心
          */
         attributeProcessing: function ($frost, attrs, elem, params, ssangyongs) {
+            //-> document-fragment 没有这玩意
+            if (!attrs) {
+                return;
+            }
             var dealWith;
             for (var i = 0, t; t = attrs[i]; i++) {
                 dealWith = this.get(t.name);
@@ -75,7 +79,7 @@
                     } else {
                         //-> 新增 
                         if (dad instanceof Array) {
-                            throw "数组为找到 __sd__ 环境";
+                            throw "数组未找到 __sd__ 环境";
                         } else {
                             //-> 添加这个 key 暂时
                             var vp = data.getValuePosition(snowflake.name, snowflake.params);
@@ -164,7 +168,7 @@
         },
         //-> 加载所有的 template
         initTemplate: function (elem) {
-            var ts =  (elem || document).querySelectorAll("template[f-temp]"),
+            var ts = (elem || document).querySelectorAll("template[f-temp]"),
                 key;
             for (var i = 0, t; t = ts[i]; i++) {
                 key = t.getAttribute("f-temp");
@@ -432,9 +436,12 @@
                 //-> 数组在这里处理
                 return;
             }
-            for (var key in this) {
-                if (this.hasOwnProperty(key)) {
-                    this[key].updateView(value[key], beforeValue[key]);
+            //-> 避免用户调用  失败
+            if (typeof (value) == "object") {
+                for (var key in this) {
+                    if (this.hasOwnProperty(key)) {
+                        this[key].updateView(value[key], beforeValue[key]);
+                    }
                 }
             }
         },
@@ -488,7 +495,6 @@
     GetSet.prototype = {
         view: function (value, beforeValue) {
             for (var i = 0, t; t = this.ssangyongs[i]; i++) {
-
                 t.updateView(value, beforeValue);
             }
         }
@@ -582,7 +588,7 @@
         //-> 是否停止
         this.recursiveNext = true;
         this.recursive = function (node) {
-            //-> 处理属性
+            //-> 处理属性  
             rain.attributeProcessing($frost, node.attributes, node, params, ssangyongs);
             //-> 子元素处理
             if (this.recursiveNext) {
@@ -681,14 +687,14 @@
         Object.defineProperty(this, "updateValue", {
             value: function () {
                 var vals;
-                for (var key in ssangyong) {
-                    if (ssangyong.hasOwnProperty(key)) {
-                        vals = ssangyong[key];
-                        if (!is.num(key)) {
-                            vals.updateView(this[Number(key)], undefined);
-                        }
-                    }
-                }
+                // for (var key in ssangyong) {
+                //     if (ssangyong.hasOwnProperty(key)) {
+                //         vals = ssangyong[key];
+                //         if (!is.num(key)) {
+                //             vals.updateView(this[Number(key)], undefined);
+                //         }
+                //     }
+                // }
                 ssangyong.length.updateView(this.length, undefined);
             }
         });
@@ -980,6 +986,18 @@
                 }
             }
         },
+        //-> 赋值
+        set:function(array,key,obj){
+            for(var i=0,l = array.length;i<l;i++){
+                if(array[i][key] == obj[key]){
+                    if(array.item){
+                        array.item(i,obj); 
+                    }else{
+                        array[i] = obj;
+                    }
+                }
+            }
+        },
         remove: function (array) {
             if (arguments.length == 2) {
                 if (arguments[1] instanceof Array) {
@@ -1038,6 +1056,48 @@
                 }
             }
             return arr;
+        },
+        assig: function (arr, kvs) {
+            for (var i = 0, t; t = arr[i]; i++) {
+                for (var k in kvs) {
+                    t[k] = t[kvs[k]];
+                }
+            }
+        },
+        /**
+         * array : 分组对象
+         * ofId  : 分组主键
+         * ofpid : 分组Id
+         * chiName: 存放名称
+         */
+        level: function (array, ofId, ofpid, chiName) {
+            var vs, jv, add, i = 0;
+            var datas = [];
+            while (i < array.length) {
+                vs = array[i];
+                i++;
+                add = true;
+                //-> 找父级或者 孩子
+                for (var j in array) {
+                    jv = array[j];
+                    //-> 找父亲
+                    if (vs[ofpid] == jv[ofId]) {
+                        //-> 父级
+                        if (jv[chiName] instanceof Array) {
+                            jv[chiName].push(vs);
+                        } else {
+                            jv[chiName] = [vs];
+                        }
+                        //-> 孩子
+                        add = false;
+                        break;
+                    }
+                }
+                if (add) {
+                    datas.push(vs);
+                }
+            }
+            return datas;
         }
     };
     var is = {
@@ -1116,6 +1176,22 @@
             }
             return obj;
         },
+        newlyObj: function (obj1) {
+            var vs;
+            for (var index = 1; index < arguments.length; index++) {
+                for (var key in (vs = arguments[index])) {
+                    if (vs.hasOwnProperty(key)) {
+                        obj1[key] = vs[key];
+                    }
+                }
+            }
+        },
+        setValue: function (o, as, set) {
+            for (var i = 0; i < as.length; i++) {
+                o[as[i]] = set(as, o[as[i]], i);
+            }
+            return o;
+        }
     };
     var val = {
         //-> 如果是 boolean 则转为 boolean 允许处理字符串 "true" | "false" 
@@ -1210,6 +1286,20 @@
                 obj[key] = vs;
             }
             return obj;
+        },
+        between: function (val, min, max) {
+            if (min > max) {
+                var t = max;
+                max = min;
+                min = t;
+            }
+            val = Number(val);
+            if (isNaN(val)) {
+                //-> 
+                return isNaN(min) || isNaN(max);
+            }
+            //-> 比较
+            return val >= min && val <= max;
         }
     };
 
@@ -1241,7 +1331,16 @@
                         strBuff.push(qm);
                     }
                     continue;
+                } else if (att[index] == '\`') {
+                    //-> 跳过
+                    index++;
+                    var c;
+                    while ((c = att[index++]) != '\`') {
+                        strBuff.push(c);
+                    }
+                    continue;
                 }
+
                 if (crux.indexOf(att[index]) != -1) {
                     if (crux.indexOf(att[index - 1]) == -1) {
                         if (att[index - 1] != ' ') {
@@ -1318,12 +1417,19 @@
             var index, len = dz.length - 1;
             for (var i = 0, t; t = arrParam[i]; i++) {
                 index = 0;
-                while (t = t[dz[index++]]) {
-                    if (index === len) {
-                        if (t instanceof SsangyongData) {
-                            return t;
-                        } else {
-                            break;
+                if (len == 0) {
+                    //-> 只有一个长度 
+                    while (dz[index] in t) {
+                        return t;
+                    }
+                } else {
+                    while (t = t[dz[index++]]) {
+                        if (index === len) {
+                            if (t instanceof SsangyongData) {
+                                return t;
+                            } else {
+                                break;
+                            }
                         }
                     }
                 }
@@ -1345,12 +1451,23 @@
             //-> 寻址
             for (var i = 0, t; t = arrParam[i]; i++) {
                 index = 0;
-                while ((t = t[dz[index++]]) !== undefined) {
-                    if (index >= len) {
-                        //-> 返回上一级对象
+                //-> 长度 
+                if (len == 0) {
+                    //-> 只有一个长度 
+                    while (dz[index] in t) {
                         return t;
                     }
+                } else {
+                    var parent = t;
+                    for(var z = 0;z<len;z++){
+                        if(parent === undefined){
+                            return parent[dz[z-1]];
+                        }
+                        parent = parent[dz[z]];
+                    }
+                    return parent;
                 }
+
             }
             return undefined;
         },
@@ -1380,8 +1497,15 @@
                 }
             }
             return undefined;
+        },
+        filling: function (data, value) {
+            for (var k in data) {
+                if (is.ava(data[k])) {
+                    data[k] = value;
+                }
+            }
+            return data;
         }
-
     }
     //-> 时间处理
     var time = {
@@ -1490,6 +1614,138 @@
         },
 
     }
+    /**
+     * 数字处理
+     */
+    var num = {
+        chinese: {
+            //-> 零到九  数字
+            number: ("零一二三四五六七八九".split("")),
+            //-> 转换时 指定第一位 而非初始化
+            unit: ("十百千万".split("")),
+            //-> 数字单位制
+            digital: ("个万亿兆京垓杼穰沟涧正载极".split("")),
+            //-> 金钱
+            monetary: ("零壹贰叁肆伍陆柒捌玖".split("")),
+            //-> 金钱 单位
+            munit: ("拾佰仟万".split("")),
+            //-> 小数单位
+            mdecimal: ("角分毫厘".split("")),
+        },
+        //-> 转换为 汉数 (整数 不会处理小数)
+        chineseNumber: function (n, vs) {
+            var str = [];
+            if (String(n).length > 22) {
+                var v = String(n);
+                if (v.length > 52) {
+                    console.warn("数据过长,最多只能展示52位,即 [极]单位之前的,之后的需要自己扩展")
+                }
+                for (var i = 0; i < v.length; i++) {
+                    str.push(vs[v[i]]);
+                }
+            } else {
+                //-> 整数
+                var intv = Number.parseInt(n);
+                if (isNaN(intv)) {
+                    return [];
+                }
+                while (intv != -1) {
+                    str.unshift(vs[intv % 10]);
+                    intv = parseInt(intv /= 10);
+                    if (intv == 0) {
+                        intv = -1;
+                    }
+                }
+            }
+            return str;
+        },
+        //-> 处理小数的 
+        chineseFloat: function (n, vs) {
+            var intv = num.chineseNumber(n, vs);
+            //-> 小数
+            if (parseFloat(n) == parseInt(n)) {
+                return intv;
+            } else {
+                var nx = num.chineseNumber(String(n).split(".")[1], vs);
+                intv.push(".");
+                intv.push.apply(intv, nx);
+            }
+            return intv;
+        },
+        //-> 核心调用
+        chineseFormat: function (val, vs, unit) {
+            var nc = num.chinese;
+            var str = num.chineseNumber(val, vs);
+            //-> 单位插入
+            var len = str.length;
+            var newStr = [];
+            var one = len != 1;
+            if (!val) {
+                return ["零"] + unit[0];
+            }
+            var c = 0;
+            for (var i = len - 1; i >= 0; i--, c++) {
+                var d = str[i];
+                if (d == "零") {
+                    if (!one) {
+                        one = true;
+                        newStr.unshift(d);
+                    }
+                    if (c % 4 == 0 && c > 0) {
+                        if (one) {
+                            //-> 如果有多个0 则置空
+                            if (((c % i == 0 && c > i) || i == 3) && (i <= 3)) {
+                                newStr.unshift(nc.digital[c / 4]);
+                            }
+                        } else {
+                            newStr.unshift(nc.digital[c / 4]);
+                        }
+                    }
+                    if (one && c == 0) {
+                        newStr.unshift(unit[c % 4]);
+                    }
+                    continue;
+                }
+                one = false;
+                if (c % 4 == 0 && c > 0) {
+                    newStr.unshift(nc.digital[c / 4]);
+                } else {
+                    //-> 插入单位
+                    newStr.unshift(unit[c % 4]);
+                }
+                newStr.unshift(d);
+            }
+            return newStr.join("");
+        },
+        //-> 
+        chineseDecimal: function (val) {
+            var zs = num.chineseFormat(val, num.chinese.number, [""].concat(num.chinese.unit));
+            //-> 是否有小数
+            if (parseFloat(val) == parseInt(val)) {
+                return zs;
+            } else {
+                var xs = String(val).split(".")[1];
+                return zs + "." + num.chineseFormat(xs, num.chinese.number, [""].concat(num.chinese.unit))
+            }
+        },
+        //-> 数字转换
+        pole: function (val, single) {
+            return num.chineseFormat(val, num.chinese.number, [single].concat(num.chinese.unit));
+        },
+        RMB: function (val, single) {
+            var zs = num.chineseFormat(val, num.chinese.monetary, [single].concat(num.chinese.munit));
+            if (is.num(val)) {
+                return zs.concat("整");
+            }
+            //-> 是否有小数
+            if (parseFloat(val) == parseInt(val)) {
+                return zs.concat("整");
+            } else {
+                var xs = String(val).split(".")[1];
+                return zs + num.chineseFormat(xs, num.chinese.monetary, [num.chinese.mdecimal[xs.length - 1]].concat(num.chinese.mdecimal))
+            }
+        }
+    }
 
     /**
      * 工具
@@ -1497,6 +1753,8 @@
     var util = {
         //-> 数组操作 
         "arr": arr,
+        //-> 数字
+        "num": num,
         //->对象
         "obj": obj,
         //-> 对象克隆
@@ -1827,6 +2085,98 @@
         this.ajax = ajax;
     }
 
+
+    /**
+        * elem: 触发元素
+        * param:{
+        *  close: true 自动关闭 | false 需要用手动关闭,
+        *  time: 200,显示时长 | 0 按照信息长度而决定
+        *  message: 提示信息
+        *  posi: 提示位置
+        * }
+        **/
+    function Tips(elem, param) {
+        if (!(this instanceof Tips)) {
+            return new Tips(elem, param);
+        }
+        if (param.close === undefined) {
+            param.close = true;
+        }
+        // -> 目标添加对象
+        this.position;
+        //-> 是否在 父级显示 
+        param.posi = (param.posi) || elem.getAttribute("tips-posi");
+        if (param.posi) {
+            //-> 指定位置显示 
+            if (!(this.position = document.querySelector(param.posi))) {
+                this.position = elem;
+            }
+        } else {
+            this.position = elem;
+        }
+        //-> 生成数据信息  
+        var div = document.createElement("div");
+        div.innerHTML = `<div style="position: absolute;z-index: 10;height: auto;text-align: center;background-color: snow;border-radius: 5px;box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);">
+                <div style="position: relative;padding: 10px;">
+                    <div style="position: absolute;    right: -15px;top: -15px;">
+                        <button style="border: 0;background-color: snow;padding: 5px;border-radius: 100%;z-index: 1;box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);" class="close-message" type="button">
+                            <img style="width: 20px;height: 20px;" src="/image/svg/close.svg" alt="关闭"></button>
+                        </div>
+                        <figure>
+                            <figcaption>${param.message}</figcaption>
+                            </figure>
+                            </div>
+                            </div>`;
+        this.content = div.children[0];
+        if (this.position.offsetWidth) {
+            this.content.style.width = this.position.offsetWidth + "px";
+        } else {
+            this.content.style.width = "100%";
+        }
+        //-> 显示时长
+        if (!param.time) {
+            //-> 根据提示的 字符长度而定
+            var t = param.message.length * 900;
+            if (t > 12 * 1000) {
+                t = 12000;
+            } else if (t < 3 * 1000) {
+                t = 3000;
+            }
+            param.time = t;
+        }
+        // -> 定位到我
+        this.locateMe = function () {
+            this.content.style.display = "";
+            this.content.setAttribute("tabindex", 1);
+            this.content.focus();
+        }
+        var isHide = false;
+        // -> 隐藏 并移除
+        this.hide = function () {
+            if (isHide) {
+                return;
+            }
+            isHide = true;
+            this.content.style.display = "none";
+            //-> 移除
+            (this.position.parentElement || this.position.parentNode).removeChild(this.content);
+        }
+        var bt = this.content.querySelector("button.close-message");
+        bt.addEventListener("click", this.hide.bind(this), false);
+        // -> 展示
+        this.show = function () {
+            //-> 父级
+            var parent = this.position.parentElement || this.position.parentNode;
+            //-> 添加
+            parent.insertBefore(this.content, this.position.nextSibling);
+            //-> 自动关闭
+            if (param.close) {
+                setTimeout(this.hide.bind(this), param.time);
+            }
+            this.locateMe();
+        }
+    }
+
     /**
      * 表单保护
      * @param {*} query 
@@ -1837,7 +2187,7 @@
      *  submit:function(),
      *  before:function(),提交之前
      *  after:function(),验证之后
-     *  verifyFail:function(), 统一的失败处理
+     *  fail:function(), 统一的失败处理
      *  controls:{
      *      name:{
      *           change:function() //-> 值改变时
@@ -1860,7 +2210,6 @@
         }
         //-> 控件对象
         var controls = parma.controls;
-
         //-> 表单
         this.$form = form;
         //-> 表单数据
@@ -1874,6 +2223,7 @@
             //-> 禁用所有 type=submit 的节点
             _this.switchSubmitButton();
             form.style.cursor = "progress";
+            form.title = "表单提交中";
         }
         this.switchSubmitButton = function () {
             var submitButton = form.querySelectorAll('[type="submit"]');
@@ -1888,35 +2238,37 @@
             //-> 启用所有的 提交按钮
             _this.switchSubmitButton();
             form.style.cursor = "";
+            form.title = "";
         }
         //-> 获取表单数据
         this.getFormData = function () {
-            if (_this.formData instanceof FormData) {
+            if (parma.data) {
                 //-> 有没有默认提交的数据
                 var defData;
                 if (is.func(parma.data)) {
-                    defData = parma.data();
+                    defData = parma.data(form, this);
                 } else {
                     //-> 克隆 
-                    defData = clone.object(defData)
+                    defData = clone.object(parma.data)
                 }
                 for (var key in defData) {
                     _this.formData.append(key, defData[key]);
                 }
+            }
+            if (_this.formData instanceof FormData) {
                 return _this.formData;
-            } else {
-                //-> 从表单中获取所需的数据
-                var elems = form.elements;
-                for (var i = 0, t; t = elems[i]; i++) {
-                    if (t.name) {
-                        var value = getInputValue(t);
-                        if (!is.ava(value)) {
-                            _this.formData.append(t.name, value);
-                        }
+            }
+            //-> 从表单中获取所需的数据
+            var elems = form.elements;
+            for (var i = 0, t; t = elems[i]; i++) {
+                if (t.name) {
+                    var value = getInputValue(t);
+                    if (!is.ava(value)) {
+                        _this.formData.append(t.name, value);
                     }
                 }
-                return _this.formData.valueOf(true);
             }
+            return _this.formData.valueOf(true);
         }
 
         //-> 函数 主要是表单验证
@@ -1932,17 +2284,25 @@
                 _this.triggerPrivate();
                 return;
             }
+            if (_this.formData instanceof GetObject) {
+                _this.formData.empty();
+            }
             //-> 提及时先执行  表单提及之前准备
             // this.before //
             // this.reportValidity //
             // this.afert // 这里一般是同步执行  用于上传表单图片
             //-> 提交数据  要么自动提交 要么 用户自定义提交
-            // form.submitFormDate-> auto || param.submit //
+            // form.submitFormData-> auto || param.submit //
             if (is.func(parma.before)) {
-                if (parma.before(form, _this) === false) {
+                if (parma.before(form, _this, _this.executionSubmit) === false) {
                     return;
                 }
             }
+            //-> 执行表单提交
+            _this.executionSubmit();
+        }
+        //-> 执行提交 
+        this.executionSubmit = function () {
             //-> 验证
             var sum = _this.reportValidity();
             if (sum !== 0) {
@@ -1955,11 +2315,19 @@
                 _this.ajaxSubmit(parma.ajax);
             } else {
                 //-> 自定义提交
-                parma.submit(form, this.formData, _this, _this.stopPrivate);
+                var data = _this.getFormData();
+                _this.retrieveData(data);
+                parma.submit.call(data, form, data, _this, _this.stopPrivate);
             }
-
         }
-
+        /**
+         * 获取表单数据后 需要做什么
+         */
+        this.retrieveData = function (data) {
+            if (parma.retrieveData) {
+                parma.retrieveData(data);
+            }
+        }
         this.ajaxSubmit = function (ajaxParam) {
             ajaxParam.action = parma.url || form.action;
             ajaxParam.method = parma.method || form.method;
@@ -1978,59 +2346,90 @@
             }
         }
         //-> 触发验证未通过
-        this.tipsFail = function (t, message) {
+        this.tipsFail = function (t, message, cont) {
             //-> 是否已经自定义了
             if (is.func(parma.fail)) {
                 //->调用全局的
-                parma.fail(t, tipsmessage, _this);
+                parma.fail(t, message, cont, _this);
             } else {
                 //-> 手动
+                new Tips(t, {
+                    "close": cont.close,
+                    "time": cont.time,
+                    "message": message,
+                    "posi": cont.posi
+                }).show();
             }
         }
         //-> 有效性  报告
         this.reportValidity = function () {
+
+            //-> 提供form 自定义验证 可能有值并不是 input
+            if (parma.verify) {
+                var vs = parma.verify(form, this, parma);
+                if (vs && parma.tips) {
+                    this.tipsFail(form, (parma.tips[vs] || vs), parma);
+                }
+            }
+
             //-> 获取表单的所有 控件 controls
             var elems = form.elements;
             var cont, tipsmessage, key, func, errorSum = 0;
-            for (var i = 0, t; t = elems[i]; i++) {
-                tipsmessage = null;
-                if (t.name && (cont = controls[t.name])) {
-                    if (is.func(cont.verify)) {
-                        key = cont.verify.call(t, t, form, cont, _this);
-                        if (typeof (key) === "string") {
-                            tipsmessage = cont.tips[key] || parma.tips[key] || parma.tips.def || t.title || "error: Data does not satisfy validation";
-                            errorSum++;
-                        }
-                    }
-                    //-> 验证 lib 库
-                    if (!tipsmessage && cont.library && cont.library.length) {
-                        //-> 验证
-                        for (var j = 0, l; l = cont.library[j]; j++) {
-                            if (is.func(func = verify[t])) {
-                                if ((tipsmessage = func(l, t.value))) {
-                                    errorSum++;
-                                    break;
-                                };
+            //-> 不可用则不循环
+            if (controls) {
+                for (var i = 0, t; t = elems[i]; i++) {
+                    tipsmessage = null;
+                    if (t.name && (cont = controls[t.name])) {
+                        if (is.func(cont.verify)) {
+                            key = cont.verify.call(t, t, form, cont, _this);
+                            if (typeof (key) === "string") {
+                                tipsmessage = (cont.tips && cont.tips[key]) || (parma.tips && (parma.tips[key] || parma.tips.def)) || t.title || key;
+                                errorSum++;
                             }
                         }
-                    }
-                    if (tipsmessage) {
-                        //-> 触发错误
-                        if (is.func(cont.fail)) {
-                            cont.fail(t, tipsmessage, _this);
-                        } else {
-                            //-> 如果有全局的  则给调用全局的 没有则 手动提示
-                            tipsFail(t, tipsmessage);
-                        };
+                        //-> 验证 lib 库
+                        if (!tipsmessage && cont.library && cont.library.length) {
+                            //-> 验证
+                            for (var j = 0, l; l = cont.library[j]; j++) {
+                                if (is.func(func = verify[t])) {
+                                    if ((tipsmessage = func(l, t.value))) {
+                                        errorSum++;
+                                        break;
+                                    };
+                                }
+                            }
+                        }
+                        if (tipsmessage) {
+                            //-> 触发错误
+                            if (is.func(cont.fail)) {
+                                cont.fail(t, tipsmessage, _this);
+                            } else {
+                                //-> 如果有全局的  则给调用全局的 没有则 手动提示
+                                this.tipsFail(t, tipsmessage, cont);
+                            };
+                        }
                     }
                 }
             }
             return errorSum;
         }
         //-> 提交数据 
-        this.submitFormDate = function () {
+        this.submitFormData = function () {
 
         }
+        /**
+         * 设置表单值
+         */
+        this.setFormValue = function(data){
+            for (var key in data) {
+                if (data.hasOwnProperty(key)) {
+                    if(form[key]){
+                        form[key].value = data[key];
+                    }
+                }
+            }
+        }
+
     }
 
     function add_GetObject(go, name) {
@@ -2104,6 +2503,16 @@
             }
             return newDate;
         },
+        //-> 置空
+        empty: function () {
+            var data = this.__data__;
+            for (var key in data) {
+                if (data.hasOwnProperty(key)) {
+                    delete data[key];
+                    delete this[key];
+                }
+            }
+        },
         //-> 移除指定数据
         remove: function (key) {
             //-> 移除指定目标
@@ -2135,8 +2544,8 @@
         append: function (key) {
             var data = this.__data__
             var as = [];
-            for (var i = 1, t; t = arguments[i]; i++) {
-                as.push(t);
+            for(var i = 1,len=arguments.length; i<len; i++ ){
+                as.push(arguments[i]);
             }
             var v = data[key];
             if (!v) {
@@ -2202,7 +2611,9 @@
                 };
             } else {
                 //-> 父级对象
+                var temp;
                 while (true) {
+                    temp = t;
                     if ((t = t.parentElement || t.parentNode) == elem) {
                         if ((sour = t.getAttribute(ename))) {
                             return {
@@ -2212,11 +2623,13 @@
                         }
                         break;
                     } else {
-                        if ((sour = t.getAttribute(ename))) {
+                        if (temp.getAttribute && (sour = temp.getAttribute(ename))) {
                             return {
                                 "attr": sour,
-                                "target": t
+                                "target": temp
                             };
+                        } else if (!t) {
+                            return false;
                         }
                     }
                 }
@@ -2250,7 +2663,7 @@
                         _this = data;
                     }
                     //-> 执行 如果有 data 属性 那么则是 data , 没有就是本事
-                    return !!func.call(_this, event, target, eve, event.target);
+                    return !func.call(_this, event, target, eve, event.target);
                 } catch (error) {
                     console.error("在执行事件时失败:" + funcName, target, error);
                 }
@@ -2280,9 +2693,9 @@
                     }
                 } else {
                     //-> 所有
-                    event.preventDefault();
+                   // event.preventDefault();
                     event.stopPropagation();
-                    event.returnValue = false;
+                 //   event.returnValue = false;
                     event.cancelBubble = true;
                 }
             }
@@ -2319,14 +2732,32 @@
 
 
     //-> 设置输入框的值
-    function setInputValue(val, elem, ice) {
+    function setInputValue(val, elem, snowflak) {
         switch (elem.type) {
             case "number":
                 //-> 判断是否保留
-
+                elem.value = val;
                 break;
             case "date":
 
+                break;
+            case "radio":
+            case "checkbox":
+                //-> 这里要判断 元素是否有值 没有才是复制 
+                var ev = elem.getAttribute("value");
+                if (snowflak.oneValue === undefined) {
+                    snowflak.oneValue = (ev === null);
+                }
+                //-> 没有值则赋值
+                if (snowflak.oneValue === true) {
+                    elem.value = val;
+                } else {
+                    if (typeof (val) == "boolean") {
+                        val = String(val);
+                    }
+                    //-> 根据当前值来做比对判断
+                    elem.checked = (elem.value == val);
+                }
                 break;
             default:
                 elem.value = val;
@@ -2406,9 +2837,29 @@
     var attrKV = new ElemAttributes();
     Frost.rain = rain;
     Frost.temp = temp;
+    Frost.util = util;
     Frost.attr = attrKV;
+    Frost.Ssangyong = Ssangyong;
 
     rain.add("f-text", {
+        initTarget: function (snowflak, elem) {
+            snowflak.target = document.createTextNode("");
+            elem.appendChild(snowflak.target);
+            if (snowflak.value.eval) {
+                if (!is.func(snowflak.value.eval)) {
+                    snowflak.value.eval = Function("value", "snowflak", "return " + snowflak.value.eval).bind(snowflak.$frost);
+                }
+            }
+        }, //-> 处理目标元素
+        execute: function (snowflak, value) {
+            if (snowflak.value.eval) {
+                value = snowflak.value.eval(value, snowflak);
+            }
+            snowflak.target.data = is.ava(value) ? "" : value;
+        } //-> 执行时
+    });
+
+    rain.add("f-json", {
         initTarget: function (snowflak, elem) {
             snowflak.target = document.createTextNode("");
             elem.appendChild(snowflak.target);
@@ -2419,13 +2870,14 @@
             }
         }, //-> 处理目标元素
         execute: function (snowflak, value) {
+            value = value ? JSON.stringify(value) : String(value);
             if (snowflak.value.eval) {
                 value = snowflak.value.eval(value);
-
             }
             snowflak.target.data = is.ava(value) ? "" : value;
         } //-> 执行时
     });
+
     /**
      * {
      *  key:目标,
@@ -2472,9 +2924,18 @@
     rain.add("f-number", {
         initTarget: function (snowflak, elem) {
             snowflak.target = document.createTextNode("");
+            if (snowflak.value.eval) {
+                if (!is.func(snowflak.value.eval)) {
+                    snowflak.value.eval = Function("value", "return " + snowflak.value.eval);
+                }
+            }
             elem.appendChild(snowflak.target);
         },
         execute: function (snowflak, val) {
+            if (snowflak.value.eval) {
+                val = snowflak.value.eval(val);
+                val = is.ava(val) ? 0 : val;
+            }
             var analysis = snowflak.value;
             //-> 是不是个数字
             if (is.num(val)) {
@@ -2626,7 +3087,11 @@
             elem.appendChild(snowflak.target);
         },
         execute: function (snowflak, value) {
-            snowflak.target.data = (time.toDate(value, snowflak.value.format)) || value;
+            if(!value && snowflak.value.def){
+                snowflak.target.data = snowflak.value.def; 
+            }else{
+                snowflak.target.data = (time.toDate(value, snowflak.value.format)) || value;
+            }
         }
     });
     rain.add("f-time", {
@@ -2635,7 +3100,11 @@
             elem.appendChild(snowflak.target);
         },
         execute: function (snowflak, value) {
-            snowflak.target.data = (time.toTime(value, snowflak.value.format)) || value;
+            if(!value && snowflak.value.def){
+                snowflak.target.data = snowflak.value.def; 
+            }else{
+                snowflak.target.data = (time.toTime(value, snowflak.value.format)) || value;
+            }
         }
     });
     rain.add("f-datetime", {
@@ -2644,7 +3113,11 @@
             elem.appendChild(snowflak.target);
         }, //-> 处理目标元素
         execute: function (snowflak, value) {
-            snowflak.target.data = (time.to(value, snowflak.value.format)) || value;
+            if(!value && snowflak.value.def){
+                snowflak.target.data = snowflak.value.def; 
+            }else{
+                snowflak.target.data = (time.to(value, snowflak.value.format)) || value;
+            }
         }
     });
     rain.add("f-html", {
@@ -2688,11 +3161,14 @@
             var param = snowflak.paramValue;
             //-> 重点在参数
             var url = snowflak.name;
+            if(url[0] == "$"){
+                url = url.substring(1);
+            }
             //-> 处理
             var v;
             for (var i = 0, t; t = param[i]; i++) {
                 v = data.getValue(t, snowflak.params);
-                url = url.replace(new RegExp("{".concat(t, "}"), "g"), v ? encodeURIComponent(v) : "");
+                url = url.replace(new RegExp("{".concat(t, "}"), "g"), v ? v : "");
             }
             //-> 
             snowflak.target.setAttribute(snowflak.attrName.substr(2), url);
@@ -2707,7 +3183,7 @@
     rain.add("f-value", {
         changeValue: function (e) {
             var event = getEvent(e);
-            var value = getInputValue(event.target.value);
+            var value = getInputValue(event.target);
             var key, dad;
             if (this.model) {
                 //-> 判断给定的模型对象是否可用
@@ -2981,9 +3457,18 @@
             if (is.func(snowflak.append)) {
                 snowflak.append(snowflak.dad, htmls, "push");
             } else {
-                //-> 没有则自己渲染 如果 数据量过多则需要分批添加
-                //-> 单次最多渲染 1024个
-                util.elem.append(snowflak.dad, snowflak.after, htmls, 1024);
+                //-> 判断是否同步渲染
+                if (snowflak.value.sync) {
+                    var time = document.createDocumentFragment();
+                    for (var i in htmls) {
+                        time.appendChild(htmls[i]);
+                    }
+                    snowflak.dad.insertBefore(time, snowflak.after);
+                } else {
+                    //-> 没有则自己渲染 如果 数据量过多则需要分批添加
+                    //-> 单次最多渲染 1024个
+                    util.elem.append(snowflak.dad, snowflak.after, htmls, 1024);
+                }
             }
         },
         filter: function (snowflak, childrens) {
@@ -3067,8 +3552,8 @@
                 newSsangyongs.unshift(nameSg);
                 newSsangyongs.unshift(sg);
             }
-            //-> 
-            var newParams = Array.apply(Array, snowflak.params);
+            //-> 是否封闭环境
+            var newParams = analysis.seal ? [] : Array.apply(Array, snowflak.params);
             //-> 处理数据
             //-> 赋值并渲染
             newParams.unshift(current);
@@ -3082,20 +3567,38 @@
             snowflak.after = document.createTextNode("");
             //-> 从容器中寻找
             if (snowflak.value && snowflak.value.elem) {
-                snowflak.target = document.createElement(elem.tagName);
-                snowflak.target.appendChild(temp.get(snowflak.value.elem));
+                if (snowflak.value.free) {
+                    snowflak.target = temp.get(snowflak.value.elem).children[0];
+                } else {
+                    snowflak.target = document.createElement(elem.tagName);
+                    snowflak.target.appendChild(temp.get(snowflak.value.elem));
+                }
             } else {
-                snowflak.target = elem.cloneNode(true);
-                snowflak.target.removeAttribute("f-for");
+                if (snowflak.value.free) {
+                    var ch = elem.children[0];
+                    snowflak.target = ch.cloneNode(true);
+                    elem.removeChild(ch);
+                } else {
+                    snowflak.target = elem.cloneNode(true);
+                    snowflak.target.removeAttribute("f-for");
+                }
             }
-            var dad = snowflak.dad = elem.parentNode || elem.parentElement;
-            dad.insertBefore(snowflak.before, elem);
-            dad.insertBefore(snowflak.after, elem.nextElementSibling || elem.nextSibling); // nextElementSibling nextSibling
-            //-> 移除自己
-            dad.removeChild(elem);
+            //-> 脱离自己 只循环子集 子集不参与循环
+            if (snowflak.value.free) {
+                snowflak.dad = elem;
+                elem.appendChild(snowflak.before);
+                elem.appendChild(snowflak.after);
+            } else {
+                var dad = snowflak.dad = elem.parentNode || elem.parentElement;
+                dad.insertBefore(snowflak.before, elem);
+                dad.insertBefore(snowflak.after, elem.nextElementSibling || elem.nextSibling); // nextElementSibling nextSibling
+                //-> 移除自己
+                dad.removeChild(elem);
+            }
             if (snowflak.value && snowflak.value.append) {
                 snowflak.append = Function("elem", "childrens", "retun " + snowflak.value.append);
             }
+
         },
         execute: function (snowflak, around) {
             //-> 这里一般是从新渲染
@@ -3186,6 +3689,17 @@
             } else {
                 elemTemp = temp.get(snowflak.name);
             }
+
+            //-> 一个数组
+            var k = snowflak.value.value;
+            if (k) {
+                var obj = {
+                    value: util.data.getValue(k, snowflak.params),
+                };
+                //-> 有自定义参数
+                snowflak.params.unshift(obj);
+            }
+
             snowflak.target.appendChild(elemTemp);
         }
     });
@@ -3194,9 +3708,125 @@
         execute: function (snowflak) {
             snowflak.$frost.$recursive.recursiveNext = false;
         }
-    })
+    });
+    rain.add("f-if", {
+        binding: false,
+        execute: function (snowflak, value) {
+            var isShow;
+            if (snowflak.value.eval) {
+                isShow = Function("value", "return " + snowflak.value.eval)(value);
+            } else {
+                isShow = !!value;
+            }
+            //->取反
+            if (snowflak.value.negate) {
+                isShow = !isShow;
+            }
+            if (isShow) {
+                //-> 显示
+            } else {
+                //-> 隐藏
+                var pa = snowflak.target.parentElement || snowflak.target.parentNode;
+                if (pa) {
+                    pa.removeChild(snowflak.target);
+                }
+            }
+        }
+    });
+
+
+    var styleSet = {
+        execute: function (snowflak, val) {
+            if (val === undefined) {
+                snowflak.target.style[snowflak.value.name] = "";
+            } else {
+                snowflak.target.style[snowflak.value.name] = val;
+            }
+        },
+        initAttr: function (snowflak) {
+            return !snowflak.target.getAttribute("f-style");
+        }
+    };
+    rain.add("f-style", styleSet);
+    rain.add("f-css", {
+        binding: true,
+        execute: NullFunc,
+        initAttr: function (snowflak, keys, param) {
+            snowflak.name = "";
+            var val = data.getValue(keys, param);
+            var sccs = [];
+            if (val) {
+                //-> 必须是对象 存储获取
+                for (var k in val) {
+                    sccs.push({
+                        name: "f-style",
+                        value: ("{".concat("key:", keys, ".", k, ",name:", k, "}")),
+                    });
+                }
+            } else {
+                return;
+            }
+            rain.attributeProcessing(snowflak.$frost, sccs, snowflak.target, param, snowflak.ssangyongs);
+        }
+    });
+
+
+    rain.add("f-hanshu", {
+        initTarget: function (snowflak, elem) {
+            snowflak.target = document.createTextNode("");
+            elem.appendChild(snowflak.target);
+            if (snowflak.value.eval) {
+                if (!is.func(snowflak.value.eval)) {
+                    snowflak.value.eval = Function("value", "snowflak", "return " + snowflak.value.eval).bind(snowflak.$frost);
+                }
+            }
+        }, //-> 处理目标元素
+        execute: function (snowflak, value) {
+            var val = snowflak.value;
+            var unit = snowflak.value.unit || "";
+            if (snowflak.value.eval) {
+                value = snowflak.value.eval(value, snowflak);
+            }
+            if (val.format == "RMB") {
+                value = num.RMB(value, unit);
+            } else if (val.format == "pole") {
+                value = num.pole(value, unit);
+            } else {
+                value = num.chineseDecimal(value);
+            }
+            snowflak.target.data = is.ava(value) ? "" : value;
+        } //-> 执行时
+    });
+
+
+
 
     function NullFunc() { }
+
+    /**
+     * 获取 路径参数
+     */
+    function LocationParam(keyv) {
+        var searchObj = new GetObject();
+        var search = wind.location.search;
+        if (search && search.length > 1) {
+            search = search.substr(1);
+            var kvs = search.split("&");
+            var kv;
+            for (var i in kvs) {
+                kv = kvs[i].split("=");
+                searchObj.append(kv[0], decodeURIComponent(kv[1]));
+            }
+        }
+        if (keyv) {
+            return searchObj.get(keyv);
+        }
+        return searchObj;
+    }
+
+    //-> 路径数据
+    Frost.search = LocationParam();
+
 
 
 })(window, window.document);
