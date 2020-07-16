@@ -1,0 +1,31 @@
+{
+  "name": "frost",
+  "version": "1.0.0",
+  "description": "快速开发",
+  "main": "App.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Evejunjie/frost.git"
+  },
+  "keywords": [
+    "frost"
+  ],
+  "author": "junjie",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Evejunjie/frost/issues"
+  },
+  "homepage": "https://github.com/Evejunjie/frost#readme",
+  "devDependencies": {
+    "@types/express": "^4.17.7"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}

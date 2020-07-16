@@ -188,7 +188,7 @@ ajax.addEventListener("loadend", function (eve) {
     window.location.hash= v;
     console.timeEnd("vime");
 });
-ajax.open("GET", "../data/data.json");
-Frost.linkTemp(["../data/code.temp", "../data/attr.temp"], function () {
+ajax.open("GET", "/docs/data/data.json");
+Frost.linkTemp(["/docs/data/code.temp", "/docs/data/attr.temp"], function () {
     ajax.send(null);
 });
